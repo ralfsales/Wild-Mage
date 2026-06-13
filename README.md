@@ -1,38 +1,76 @@
 # Wild Mage
 
-Wild Mage is a browser-based pixel-style 2D RPG game built with HTML, CSS, and JavaScript.  
-Play as a mage, explore a top-down grass map, defeat elemental monsters, collect coins, find treasures, and tame monsters to fight alongside you.
+Wild Mage is a browser-based pixel-style 2D RPG built with HTML, CSS, JavaScript, and HTML Canvas.
+
+Play as a mage, explore a top-down grass map, defeat elemental monsters, collect coins, find treasure, and tame monsters so they can fight beside you.
+
+## Play Online
+
+https://ralfsales.github.io/Wild-Mage/
 
 ## Features
 
-- Pixel-art inspired 2D canvas game
-- Top-down map with bushes, rocks, paths, treasure, and monster spawns
-- Mage player with health and coin collection
-- Elemental combat system:
-  - Water is strong against Fire
-  - Fire is strong against Grass
-  - Grass is strong against Water
-- Four abilities:
-  - Fire spell
-  - Water spell
-  - Grass spell
-  - Tame spell
-- Monsters spawn from bushes and chase the player
+- Pixel-art inspired 2D canvas gameplay
+- Top-down grass map with bushes, rocks, paths, treasure, and monster spawns
+- Mage player with health, coins, spells, and tamed allies
+- Fire, Water, and Grass elemental monsters
+- Monsters chase and attack the player
 - Defeated monsters drop coins
-- Treasure chests give bonus coins
-- Tamed monsters become allies and attack enemies
-- Tame slot system:
-  - Start with 1 tame slot
-  - Random charm items appear on the map
-  - Each charm unlocks 1 extra tame slot
-  - Maximum of 5 tame slots
-- Game over screen with final coin score
-- Restart support
+- Hidden treasure chests give bonus coins
+- Tamed monsters become allies and attack hostile monsters
+- Tame slot system with unlockable slots
+- Game over screen with final coin score and restart support
 
-## Taming Rules
+## Controls
+
+| Action | Key |
+| --- | --- |
+| Move | Arrow Keys |
+| Fire Spell | F |
+| Water Spell | D |
+| Grass Spell | S |
+| Tame Spell | A |
+| Aim | Face a direction or click the map |
+| Restart after Game Over | R |
+
+## Element System
+
+- Water is strong against Fire
+- Fire is strong against Grass
+- Grass is strong against Water
+
+Strong attacks deal extra damage.
+
+## Taming
 
 Taming has a 75% chance of success.
 
-You do not need to damage a monster before taming it, but you must have an open tame slot. If all tame slots are full, taming will fail until you unlock another slot or lose an ally.
+The player starts with 1 tame slot. Glowing charm items can randomly appear on the map, and each charm unlocks 1 extra tame slot. The maximum number of tame slots is 5.
 
-Tamed allies do not damage the player and are immune to attacks from enemies of the same element type.
+Tamed allies do not damage the player. Allies are also immune to damage from enemies of the same element type.
+
+## Project Files
+
+```text
+Wild-Mage/
+  index.html
+  style.css
+  game.js
+  README.md
+```
+
+## Built With
+
+- HTML
+- CSS
+- JavaScript
+- HTML Canvas
+
+## Future Ideas
+
+- More monster types
+- Boss enemies
+- More maps
+- Music and sound effects
+- Player upgrades
+- Save and load support
