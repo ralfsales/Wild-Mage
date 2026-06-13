@@ -47,7 +47,7 @@ Taming has a 75% chance of success.
 
 The player starts with 1 tame slot. Glowing charm items can randomly appear on the map, and each charm unlocks 1 extra tame slot. The maximum number of tame slots is 5.
 
-Tamed allies do not damage the player. Allies are also immune to damage from enemies of the same element type.
+Tamed allies do not damage the player. Allies are also immune to the element they are strong against: Fire allies ignore Grass attacks, Water allies ignore Fire attacks, and Grass allies ignore Water attacks.
 
 ## Project Files
 

@@ -265,7 +265,7 @@ class Ally extends Monster {
   }
 
   takeDamage(amount, attackerType) {
-    if (attackerType === this.type) {
+    if (strongAgainst(this.type, attackerType)) {
       game.floaters.push(new Floater(this.x - 8, this.y - 8, "Immune", "#b7edff"));
       return;
     }
