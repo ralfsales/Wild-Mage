@@ -21,9 +21,9 @@ const ELEMENT_COLORS = {
 };
 const SKILLS = [
   { key: "f", name: "Fire", element: "fire", damage: 26, cooldown: 390, range: 172 },
-  { key: "a", name: "Water", element: "water", damage: 26, cooldown: 390, range: 172 },
+  { key: "d", name: "Water", element: "water", damage: 26, cooldown: 390, range: 172 },
   { key: "s", name: "Grass", element: "grass", damage: 26, cooldown: 390, range: 172 },
-  { key: "d", name: "Tame", element: "tame", damage: 0, cooldown: 850, range: 112 },
+  { key: "a", name: "Tame", element: "tame", damage: 0, cooldown: 850, range: 112 },
 ];
 
 const keys = new Set();
@@ -173,7 +173,7 @@ class Monster {
     }
 
     if (rectsOverlap(this, target) && this.attackCooldown <= 0) {
-      target.takeDamage(this.damage);
+      target.takeDamage(this.damage, this.type);
       this.attackCooldown = 1.0;
     }
   }
@@ -264,7 +264,11 @@ class Ally extends Monster {
     }
   }
 
-  takeDamage(amount) {
+  takeDamage(amount, attackerType) {
+    if (attackerType === this.type) {
+      game.floaters.push(new Floater(this.x - 8, this.y - 8, "Immune", "#b7edff"));
+      return;
+    }
     this.health = Math.max(0, this.health - Math.round(amount * 0.5));
     if (this.health <= 0) this.dead = true;
   }
@@ -371,6 +375,39 @@ class Treasure {
   }
 }
 
+class TameSlotItem {
+  constructor(x, y) {
+    this.x = clamp(x, 24, WIDTH - 40);
+    this.y = clamp(y, 66, HEIGHT - 40);
+    this.w = 22;
+    this.h = 22;
+    this.pulse = rand(0, Math.PI * 2);
+  }
+
+  update(dt) {
+    this.pulse += dt * 5;
+    if (rectsOverlap(this, game.player)) {
+      game.tameSlots = Math.min(game.maxTameSlots, game.tameSlots + 1);
+      this.dead = true;
+      game.floaters.push(new Floater(this.x - 14, this.y - 8, "Slot +1", "#f2dc6d"));
+      game.particles.burst(center(this), "#f2dc6d", 26);
+      game.audio.play(900, 0.1, "triangle");
+    }
+  }
+
+  draw() {
+    const bob = Math.sin(this.pulse) * 3;
+    const x = Math.round(this.x);
+    const y = Math.round(this.y + bob);
+    ctx.fillStyle = "#7f5cff";
+    ctx.fillRect(x + 7, y + 2, 8, 18);
+    ctx.fillRect(x + 2, y + 7, 18, 8);
+    ctx.fillStyle = "#f2dc6d";
+    ctx.fillRect(x + 9, y + 4, 4, 14);
+    ctx.fillRect(x + 4, y + 9, 14, 4);
+  }
+}
+
 class Floater {
   constructor(x, y, text, color) {
     this.x = x;
@@ -445,9 +482,13 @@ class Game {
     this.spells = [];
     this.coins = [];
     this.treasures = [];
+    this.tameSlotItems = [];
     this.floaters = [];
     this.particles = new ParticleSystem();
     this.spawnTimer = 0.9;
+    this.slotSpawnTimer = 8;
+    this.tameSlots = 1;
+    this.maxTameSlots = 5;
     this.bushes = [
       { x: 78, y: 92 }, { x: 440, y: 78 }, { x: 820, y: 112 },
       { x: 92, y: 488 }, { x: 504, y: 540 }, { x: 835, y: 468 },
@@ -485,6 +526,11 @@ class Game {
     this.particles.burst({ x: bush.x + 16, y: bush.y + 16 }, "#77d353", 14);
   }
 
+  spawnTameSlotItem() {
+    if (this.tameSlots >= this.maxTameSlots || this.tameSlotItems.length > 0) return;
+    this.tameSlotItems.push(new TameSlotItem(rand(55, WIDTH - 70), rand(85, HEIGHT - 70)));
+  }
+
   cast(targetX, targetY) {
     if (this.player.cooldown > 0 || this.state !== "playing") return;
     const skill = SKILLS[this.player.selectedSkill];
@@ -498,11 +544,11 @@ class Game {
   }
 
   tryTame(monster) {
-    if (monster.health > monster.maxHealth * 0.5) {
-      this.floaters.push(new Floater(monster.x - 8, monster.y - 8, "Too strong", "#f8f0ce"));
+    if (this.allies.length >= this.tameSlots) {
+      this.floaters.push(new Floater(monster.x - 8, monster.y - 8, "No slot", "#f8f0ce"));
       return;
     }
-    if (Math.random() < 0.5) {
+    if (Math.random() < 0.75) {
       monster.dead = true;
       this.allies.push(new Ally(monster));
       this.floaters.push(new Floater(monster.x - 8, monster.y - 8, "Tamed!", "#f2dc6d"));
@@ -522,8 +568,13 @@ class Game {
       this.spawnMonster();
       this.spawnTimer = rand(2.2, 4.4);
     }
+    this.slotSpawnTimer -= dt;
+    if (this.slotSpawnTimer <= 0) {
+      this.spawnTameSlotItem();
+      this.slotSpawnTimer = rand(13, 20);
+    }
 
-    for (const group of [this.monsters, this.allies, this.spells, this.coins, this.treasures, this.floaters]) {
+    for (const group of [this.monsters, this.allies, this.spells, this.coins, this.treasures, this.tameSlotItems, this.floaters]) {
       for (const item of group) item.update(dt);
     }
     this.particles.update(dt);
@@ -532,12 +583,14 @@ class Game {
     this.allies = this.allies.filter((ally) => !ally.dead);
     this.spells = this.spells.filter((spell) => !spell.dead);
     this.coins = this.coins.filter((coin) => !coin.dead);
+    this.tameSlotItems = this.tameSlotItems.filter((item) => !item.dead);
     this.floaters = this.floaters.filter((floater) => floater.life > 0);
   }
 
   draw() {
     drawMap(this);
     for (const treasure of this.treasures) treasure.draw();
+    for (const item of this.tameSlotItems) item.draw();
     for (const coin of this.coins) coin.draw();
     for (const spell of this.spells) spell.draw();
     for (const ally of this.allies) ally.draw();
@@ -625,7 +678,7 @@ function drawUI(currentGame) {
   ctx.fillText(`Coins ${player.coins}`, 252, 39);
   ctx.fillStyle = "#f8f0ce";
   ctx.fillText(`Skill ${SKILLS[player.selectedSkill].name}`, 390, 39);
-  ctx.fillText(`Allies ${currentGame.allies.length}`, 560, 39);
+  ctx.fillText(`Allies ${currentGame.allies.length}/${currentGame.tameSlots}`, 560, 39);
   const ready = player.cooldown <= 0 ? "Ready" : `${player.cooldown.toFixed(1)}s`;
   ctx.fillText(ready, 690, 39);
 
