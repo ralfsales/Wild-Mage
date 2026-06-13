@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wildwood Mage</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="game-shell">
+    <header class="title-bar">
+      <div>
+        <p class="eyebrow">Pixel RPG</p>
+        <h1>Wildwood Mage</h1>
+      </div>
+      <button id="muteButton" class="icon-button" type="button" title="Toggle sound">S</button>
+    </header>
+
+    <section class="canvas-frame" aria-label="Wildwood Mage game">
+      <canvas id="gameCanvas" width="960" height="640"></canvas>
+
+      <div id="startScreen" class="overlay">
+        <div class="panel">
+          <h2>Wildwood Mage</h2>
+          <p>Defeat elemental monsters, collect dropped coins, and tame weakened foes into allies.</p>
+          <div class="controls-grid">
+            <span>Move</span><strong>Arrow keys</strong>
+            <span>Attacks</span><strong>F Fire / A Water / S Grass / D Tame</strong>
+            <span>Aim</span><strong>Face a direction or click the map</strong>
+          </div>
+          <button id="startButton" type="button">Start Adventure</button>
+        </div>
+      </div>
+
+      <div id="gameOverScreen" class="overlay hidden">
+        <div class="panel">
+          <h2>Game Over</h2>
+          <p id="finalScore">Final coins: 0</p>
+          <button id="restartButton" type="button">Restart</button>
+        </div>
+      </div>
+    </section>
+
+    <footer class="hint-bar">
+      <span>Tip: tame only works below half monster health.</span>
+      <span>Element chain: Water beats Fire, Fire beats Grass, Grass beats Water.</span>
+    </footer>
+  </main>
+
+  <script src="game.js"></script>
+</body>
+</html>
