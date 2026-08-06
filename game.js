@@ -233,7 +233,7 @@ class Ally extends Monster {
   constructor(monster) {
     super(monster.x, monster.y, monster.type);
     this.maxHealth = monster.maxHealth;
-    this.health = Math.max(18, monster.health);
+    this.health = Math.max(28, monster.health);
     this.speed = 88;
     this.attackCooldown = 0;
   }
