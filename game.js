@@ -20,10 +20,10 @@ const ELEMENT_COLORS = {
   tame: "#f2dc6d",
 };
 const SKILLS = [
-  { key: "f", name: "Fire", element: "fire", damage: 26, cooldown: 390, range: 172 },
-  { key: "d", name: "Water", element: "water", damage: 26, cooldown: 390, range: 172 },
-  { key: "s", name: "Grass", element: "grass", damage: 26, cooldown: 390, range: 172 },
-  { key: "a", name: "Tame", element: "tame", damage: 0, cooldown: 850, range: 112 },
+  { key: "f", name: "Fire", element: "fire", damage: 26, cooldown: 390, range: 130 },
+  { key: "d", name: "Water", element: "water", damage: 26, cooldown: 390, range: 100 },
+  { key: "s", name: "Grass", element: "grass", damage: 26, cooldown: 390, range: 150 },
+  { key: "a", name: "Tame", element: "tame", damage: 0, cooldown: 850, range: 80 },
 ];
 
 const keys = new Set();
@@ -142,10 +142,10 @@ class Monster {
     this.w = 25;
     this.h = 23;
     this.type = type;
-    this.maxHealth = 62;
+    this.maxHealth = 80;
     this.health = this.maxHealth;
     this.speed = rand(18, 30);
-    this.damage = type === "fire" ? 12 : 10;
+    this.damage = type === "fire" ? 15 : 5;
     this.attackCooldown = rand(0.1, 0.8);
     this.dead = false;
     this.spawnGlow = 0.5;
