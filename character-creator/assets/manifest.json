@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "canvas": {"recommendedWidth": 512, "recommendedHeight": 512},
+  "layers": ["body", "eyes", "mouth", "skinFeatures", "hair", "clothing", "boots", "hat", "hold"],
+  "body": {
+    "fair": "body/body-fair.png",
+    "medium": "body/body-medium.png",
+    "dark": "body/body-dark.png"
+  },
+  "eyes": {
+    "round": "eyes/round.png",
+    "mid": "eyes/mid.png",
+    "narrow": "eyes/narrow.png",
+    "colors": ["black", "brown", "blue", "green", "yellow", "pink"]
+  },
+  "hair": {
+    "bald": "hair/bald.png",
+    "moicano": "hair/moicano.png",
+    "curlyShort": "hair/curly-short.png",
+    "coil": "hair/coil.png",
+    "militar": "hair/militar.png",
+    "sidePart": "hair/side-part.png",
+    "chanel": "hair/chanel.png",
+    "bob": "hair/bob.png",
+    "straightLong": "hair/straight-long.png",
+    "curlyLong": "hair/curly-long.png",
+    "ponytail": "hair/ponytail.png",
+    "dreads": "hair/dreads.png",
+    "blackPower": "hair/blackpower.png",
+    "colors": ["darkBrown", "brown", "blond", "ruivo", "purple", "white", "green", "pink"]
+  },
+  "mouth": {
+    "status": "approved-reference-needs-individual-transparent-overlays",
+    "shapes": ["thin-smile", "thin-straight", "thin-surprised", "thick-smile", "thick-straight", "thick-surprised"],
+    "colors": ["none", "softPink", "red", "plum"]
+  }
+}
