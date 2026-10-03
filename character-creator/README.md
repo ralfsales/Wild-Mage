@@ -1,85 +1,80 @@
 # Wild Mage Character Creator
 
-Standalone prototype for designing the player's mage before it is integrated into the main game.
+Standalone prototype for designing the player's mage before integration into the main game.
 
-## Run
-Open `character-creator/index.html` from a local web server or GitHub Pages.
+## Status
 
-## Current customization model
+The body, eyes, mouth, freckles, beard, and hair positioning pass is now **approved/final**. Placement sliders are no longer part of the intended final UI for these categories; users should only select feature/style/colour options.
+
+The exact approved values are stored in [`final-config.json`](./final-config.json).
+
+## Approved customization
 
 - Skin: Fair, Medium/Brown, Dark
-- Hair shapes: Bald, Moicano, Curly (short), Coil, Militar, Side Part, Chanel, Straight (long), Curly (long), Ponytail, Dreads, BlackPower/Afro
+- Hair: Bald, Moicano, Curly Short, Coil, Militar, Side Part, Chanel, Bob, Straight Long, Curly Long, Ponytail, Dreads, BlackPower/Afro
 - Hair colours: Dark Brown, Brown, Blond, Ruivo, Purple, White, Green, Pink
 - Eyes: Round, Mid, Narrow
-- Eye colours: Black, Brown, Blue, Green, Yellow, Pink
-- Mouth: Thin/Thick × Smile/Straight/Surprised
-- Lip colours: None, Soft Pink, Red, Plum
-- Features: Freckles and Short/Trimmed Beard; beard inherits hair colour
-- Hat: Hood, Witch Hat, Cap, None
-- Hat colours: Blue, Black, White, Green, Yellow, Red, Pink, Purple, Gray
-- Clothing: Cloak, Coat
-- Clothing colours: Blue, Black, White, Green, Yellow, Red, Pink, Purple, Gray
-- Hold: Magic Glove, Wand, Staff, Floating Crystal
+- Iris colours: Black, Brown, Blue, Green, Yellow, Pink
+- Mouth: Thin Smile, Thin Straight, Thick Smile, Thick Straight
+- Lips: None / skin colour, Red Lipstick, Plum Lipstick
+- Face features: Freckles, Trimmed Beard
+- Beard colour always follows the selected hair colour
 
-## Architecture
+## Final layering
 
-`index.html` contains only the standalone creator UI.
+Current approved layer order for this stage:
 
-`styles.css` contains the Wildwood creator styling.
+1. Body
+2. Eyes
+3. Freckles
+4. Mouth
+5. Beard
+6. Hair
 
-`sprites.js` is the shared layered character renderer. Skin, mouth, features, clothing, hats and held items are still vector placeholders and can be upgraded category by category.
+Hair is the higher layer over the beard. The body is kept below the hair for now.
 
-`hair-sprites.js` loads aligned transparent SVG hair assets from `assets/hair/`, applies the selected hair colour, and replaces only the hair layer.
+## Final positioning
 
-`eyes-sprites.js` loads aligned SVG eye assets from `assets/eyes/`. Every eye shape has a neutral base sprite plus a separate iris mask, so the selected iris colour can be applied dynamically without duplicating the artwork.
+### Eyes
 
-`app.js` owns UI state, randomize/reset/save controls and localStorage persistence.
+- Round: `x=0px`, `y=-103px`, `scale=31%`
+- Mid: `x=0px`, `y=-103px`, `scale=35%`
+- Narrow: `x=0px`, `y=-103px`, `scale=34%`
 
-Saved state key: `wildMageCharacterDraftV1`.
+Eye colour must change the **iris inside the selected eye sprite**, not add a separate iris overlay layer.
 
-## Hair sprite assets
+### Mouth
 
-All hair assets share a `320 × 400` viewBox and are aligned to the same head position. `bald` intentionally has no sprite.
+- Thin Straight: `x=0px`, `y=-56px`, `scale=45%`
+- Thin Smile: `x=0px`, `y=-55px`, `scale=40%`
+- Thick Straight: `x=0px`, `y=-51px`, `scale=15%`
+- Thick Smile: `x=0px`, `y=-52px`, `scale=15%`
 
-- `assets/hair/moicano.svg`
-- `assets/hair/curly-short.svg`
-- `assets/hair/coil.svg`
-- `assets/hair/militar.svg`
-- `assets/hair/side-part.svg`
-- `assets/hair/chanel.svg`
-- `assets/hair/straight-long.svg`
-- `assets/hair/curly-long.svg`
-- `assets/hair/ponytail.svg`
-- `assets/hair/dreads.svg`
-- `assets/hair/black-power.svg`
+### Face features
 
-One neutral sprite is reused for all eight hair colours.
+- Beard: `x=0px`, `y=-70px`, `scale=47%`
+- Freckles: `x=0px`, `y=-73px`, `scale=34%`
 
-## Eye sprite assets
+### Hair
 
-All eye assets share the same `320 × 400` alignment as the character.
+- Bald: no visible hair layer
+- Moicano: `x=-13px`, `y=-6px`, `scale=122%`
+- Curly Short: `x=0px`, `y=7px`, `scale=133%`
+- Coil: `x=-4px`, `y=-8px`, `scale=128%`
+- Militar: `x=-4px`, `y=50px`, `scale=169%`
+- Side Part: `x=-3px`, `y=24px`, `scale=127%`
+- Chanel: `x=1px`, `y=47px`, `scale=140%`
+- Bob: `x=0px`, `y=-131px`, `scale=61%`
+- Straight Long: `x=-1px`, `y=-74px`, `scale=71%`
+- Curly Long: `x=-1px`, `y=-96px`, `scale=69%`
+- Ponytail: `x=11px`, `y=-142px`, `scale=69%`
+- Dreads: `x=-4px`, `y=-120px`, `scale=63%`
+- BlackPower/Afro: `x=-6px`, `y=-151px`, `scale=63%`
 
-- `assets/eyes/round-base.svg`
-- `assets/eyes/round-iris.svg`
-- `assets/eyes/mid-base.svg`
-- `assets/eyes/mid-iris.svg`
-- `assets/eyes/narrow-base.svg`
-- `assets/eyes/narrow-iris.svg`
+## Body notes
 
-The base sprite contains the sclera, outline and brow shape. The iris sprite works as a tint mask for Black, Brown, Blue, Green, Yellow or Pink. Pupils and highlights are composed on top by `eyes-sprites.js`.
+The nose belongs to the base body. It needs enough definition/contrast to remain visible on Fair, Medium/Brown, and Dark/Black skin tones.
 
-## Integration later
+## Next stage
 
-The game should import the same character state and renderer rather than rebuilding customization logic. The intended draw order is:
-
-1. shadow/body/legs
-2. clothing
-3. skin/head
-4. eyes
-5. mouth
-6. freckles/beard
-7. hair
-8. hat
-9. held magic item
-
-The creator remains isolated from the current game. Once all categories have production sprites, the renderer and saved character object can be connected to the main game without changing the customization model.
+The next character-creator categories can be developed on top of this locked base without changing these approved placements.
