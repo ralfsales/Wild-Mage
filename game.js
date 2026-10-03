@@ -47,7 +47,7 @@ const SKILLS = [
 
 const ENERGY_PER_CHARGE = 3;
 const MAX_CHARGES = 3;
-const ENERGY_DROP_CHANCE = 0.2;
+const ITEM_DROP_CHANCE = 0.1;
 const keys = new Set();
 const attackHolds = new Map();
 const CHARGE_HOLD_SECONDS = 0.5;
@@ -121,14 +121,14 @@ class Player {
       dx /= length;
       dy /= length;
       this.facing = { x: dx, y: dy };
-      this.x = clamp(this.x + dx * this.speed * dt, 8, WIDTH - this.w - 8);
-      this.y = clamp(this.y + dy * this.speed * dt, 48, HEIGHT - this.h - 8);
+      moveActor(this, dx * this.speed * dt, dy * this.speed * dt);
     }
     this.cooldown = Math.max(0, this.cooldown - dt);
     this.invulnerable = Math.max(0, this.invulnerable - dt);
   }
 
-  takeDamage(amount) {
+  takeDamage(amount, element) {
+    if (game.buffs.ace > 0 || game.buffs[element] > 0) return;
     if (this.invulnerable > 0 || game.state !== "playing") return;
     this.health = Math.max(0, this.health - amount);
     this.invulnerable = 0.55;
@@ -175,7 +175,8 @@ class Monster {
     return this.burrowState === "underground" || this.burrowState === "warning";
   }
 
-  canBeHit(element) {
+  canBeHit(element, ace = false) {
+    if(ace) return true;
     if (this.underground) return element === "grass";
     return this.dashState !== "dashing" || element === "water";
   }
@@ -218,8 +219,7 @@ class Monster {
       for (let i = 0; i < steps; i++) {
         const nextX = this.x + this.dashDirection.x * travel / steps;
         const nextY = this.y + this.dashDirection.y * travel / steps;
-        this.x = clamp(nextX, 8, WIDTH - this.w - 8);
-        this.y = clamp(nextY, 58, HEIGHT - this.h - 8);
+        moveActor(this, nextX-this.x, nextY-this.y);
         for (const victim of [game.player, ...game.allies]) {
           if (!victim.dead && !this.dashHits.has(victim) && rectsOverlap(this, victim)) {
             this.dashHits.add(victim);
@@ -280,6 +280,7 @@ class Monster {
     if (this.burrowState === "warning") {
       if (this.burrowTimer <= 0) {
         this.burrowState = "recovery";
+        Object.assign(this,game.freeSpot(this.x,this.y,this.w,this.h));
         this.burrowTimer = 1.1;
         this.attackCooldown = 1.1;
         game.particles.burst(center(this), "#aa8250", 24);
@@ -322,8 +323,7 @@ class Monster {
     const selfCenter = center(this);
     const d = Math.hypot(targetCenter.x - selfCenter.x, targetCenter.y - selfCenter.y);
     if (d > 4) {
-      this.x += ((targetCenter.x - selfCenter.x) / d) * this.speed * dt;
-      this.y += ((targetCenter.y - selfCenter.y) / d) * this.speed * dt;
+      walkToward(this, targetCenter, this.speed * dt);
     }
 
     if (rectsOverlap(this, target) && this.attackCooldown <= 0) {
@@ -332,10 +332,10 @@ class Monster {
     }
   }
 
-  takeDamage(amount, element) {
-    if (this.dead || !this.canBeHit(element)) return;
+  takeDamage(amount, element, ace = false) {
+    if (this.dead || !this.canBeHit(element, ace)) return;
     if (this.dashState === "dashing" && element === "water") this.finishDash(true);
-    const multiplier = strongAgainst(element, this.type) ? 1.6 : 1;
+    const multiplier = (ace || strongAgainst(element, this.type)) ? 1.6 : 1;
     const finalDamage = Math.round(amount * multiplier);
     this.health -= finalDamage;
     game.floaters.push(new Floater(this.x, this.y - 10, multiplier > 1 ? `${finalDamage}!` : `${finalDamage}`, multiplier > 1 ? "#fff176" : "#ffffff"));
@@ -348,10 +348,15 @@ class Monster {
     this.dead = true;
     const count = Math.floor(rand(2, 5));
     for (let i = 0; i < count; i++) {
-      game.coins.push(new Coin(this.x + rand(-10, 22), this.y + rand(-10, 22), 1));
+      const p=game.freeSpot(this.x + rand(-10,22),this.y + rand(-10,22),12,12);
+      game.coins.push(new Coin(p.x,p.y,1));
     }
-    if (Math.random() < ENERGY_DROP_CHANCE) game.energyDrops.push(new EnergyOrb(this.x, this.y));
-    if (Math.random() < 0.16) game.treasures.push(new Treasure(this.x, this.y));
+    if (Math.random() < ITEM_DROP_CHANCE) {
+      const kind=["energy","shield","union","upgrade","ace"][Math.floor(Math.random()*5)];
+      const p=game.freeSpot(this.x,this.y,18,18);
+      if(kind==="energy") game.energyDrops.push(new EnergyOrb(p.x,p.y));
+      else game.pickups.push(new Pickup(p.x,p.y,kind,this.type));
+    }
     game.audio.play(180, 0.08);
   }
 
@@ -409,8 +414,7 @@ class Ally extends Monster {
     if (s.kind === "fire") {
       const steps = Math.max(1, Math.ceil(420 * duration / 6));
       for (let i=0;i<steps;i++) {
-        this.x = clamp(this.x+s.direction.x*420*duration/steps,8,WIDTH-this.w-8);
-        this.y = clamp(this.y+s.direction.y*420*duration/steps,58,HEIGHT-this.h-8);
+        if (!moveActor(this,s.direction.x*420*duration/steps,s.direction.y*420*duration/steps)) { s.time=0; break; }
         for (const m of game.monsters) if (!m.dead && !s.hits.has(m) && m.canBeHit("fire") && rectsOverlap(this,m)) { s.hits.add(m); m.takeDamage(36,"fire"); }
       }
     } else if (s.kind === "grass") {
@@ -423,11 +427,12 @@ class Ally extends Monster {
       this.trail.push({x:this.x,y:this.y,life:0.3});
       if(s.time<=0) game.areaAttacks.push(new AreaAttack(center(this),"grass",110,36));
     }
-    if(s.time<=0){this.special=null;this.dashState="ready";this.burrowState="surface";this.attackCooldown=0.6;}
+    if(s.time<=0){Object.assign(this,game.freeSpot(this.x,this.y,this.w,this.h));this.special=null;this.dashState="ready";this.burrowState="surface";this.attackCooldown=0.6;}
   }
 
   update(dt) {
     if (this.dead) return;
+    if (this.summonLife !== undefined && (this.summonLife -= dt) <= 0) { this.dead=true; return; }
     if (this.special) { this.animationTime += dt * 7; this.updateSpecial(dt); return; }
     this.animationTime += dt * 7;
     this.attackCooldown = Math.max(0, this.attackCooldown - dt);
@@ -445,8 +450,7 @@ class Ally extends Monster {
     const selfCenter = center(this);
     const d = Math.hypot(destination.x - selfCenter.x, destination.y - selfCenter.y);
     if (d > 38) {
-      this.x += ((destination.x - selfCenter.x) / d) * this.speed * dt;
-      this.y += ((destination.y - selfCenter.y) / d) * this.speed * dt;
+      walkToward(this, destination, this.speed * dt);
     }
 
     if (target && rectsOverlap(this, target) && this.attackCooldown <= 0) {
@@ -482,21 +486,30 @@ class Spell {
     this.r = skill.element === "tame" ? 9 : 6;
     this.life = skill.range / 420;
     this.dead = false;
+    this.ace = game.buffs.ace > 0 && skill.element !== "tame";
+    this.explosive = game.buffs.upgrade > 0 && game.upgradeMode === "blast" && skill.element !== "tame";
   }
 
   update(dt) {
+    if(this.dead)return;
     this.x += this.vx * dt;
     this.y += this.vy * dt;
     this.life -= dt;
-    if (this.life <= 0 || this.x < 0 || this.x > WIDTH || this.y < 0 || this.y > HEIGHT) this.dead = true;
+    if (this.life <= 0 || this.x < 0 || this.x > WIDTH || this.y < 0 || this.y > HEIGHT || game.obstacles.some(o=>rectsOverlap({x:this.x-this.r,y:this.y-this.r,w:this.r*2,h:this.r*2},o))) { this.dead=true; if(this.explosive)this.explode(); return; }
 
     for (const monster of game.monsters) {
-      if (monster.dead || !monster.canBeHit(this.skill.element) || Math.hypot(this.x - center(monster).x, this.y - center(monster).y) > this.r + 14) continue;
+      if (monster.dead || !monster.canBeHit(this.skill.element, this.ace) || Math.hypot(this.x - center(monster).x, this.y - center(monster).y) > this.r + 14) continue;
       if (this.skill.element === "tame") game.tryTame(monster);
-      else monster.takeDamage(this.skill.damage, this.skill.element);
+      else if(this.explosive) this.explode();
+      else monster.takeDamage(this.skill.damage, this.skill.element, this.ace);
       this.dead = true;
       break;
     }
+  }
+
+  explode() {
+    const blast=new AreaAttack({x:this.x,y:this.y},this.skill.element,75,this.skill.damage);
+    blast.ace=this.ace;game.areaAttacks.push(blast);
   }
 
   draw() {
@@ -667,6 +680,10 @@ class Game {
 
   reset() {
     this.state = "start";
+    this.level=1; this.elapsed=0; this.tamedElements=new Set(); this.spawnIndex=0;
+    this.buffs={fire:0,water:0,grass:0,ace:0,upgrade:0};this.upgradeMode="spread";
+    this.pickups=[];this.potionTimer=rand(10,16);
+    this.obstacles=[{x:275,y:165,w:105,h:45},{x:605,y:175,w:48,h:110},{x:290,y:410,w:48,h:105},{x:590,y:440,w:115,h:45}];
     this.player = new Player(WIDTH / 2, HEIGHT / 2);
     this.monsters = [];
     this.allies = [];
@@ -681,7 +698,7 @@ class Game {
     this.particles = new ParticleSystem();
     this.spawnTimer = 0.9;
     this.slotSpawnTimer = 8;
-    this.tameSlots = 1;
+    this.tameSlots = 3;
     this.maxTameSlots = 5;
     this.bushes = [
       { x: 78, y: 92 }, { x: 440, y: 78 }, { x: 820, y: 112 },
@@ -702,7 +719,9 @@ class Game {
     pauseButton.innerHTML = "Pause <kbd>Esc</kbd>";
     startScreen.classList.add("hidden");
     gameOverScreen.classList.add("hidden");
-    for (let i = 0; i < 5; i++) this.spawnMonster();
+    document.getElementById("levelCompleteScreen").classList.add("hidden");
+    for (let i = 0; i < 3; i++) this.spawnMonster();
+    this.spawnTimer=6; this.updateLesson();
     canvas.focus({ preventScroll: true });
   }
 
@@ -721,17 +740,54 @@ class Game {
     return [...rocks, ...flowers];
   }
 
+  freeSpot(x=rand(40,WIDTH-60),y=rand(80,HEIGHT-90),w=25,h=28) {
+    const valid=p=>!this.obstacles.some(o=>rectsOverlap({...p,w,h},o));
+    const p={x:clamp(x,12,WIDTH-w-12),y:clamp(y,70,HEIGHT-h-55)};
+    if(valid(p))return p;
+    const edges=this.obstacles.flatMap(o=>[{x:o.x-w-2,y:p.y},{x:o.x+o.w+2,y:p.y},{x:p.x,y:o.y-h-2},{x:p.x,y:o.y+o.h+2}]).filter(q=>q.x>=12&&q.y>=70&&q.x<=WIDTH-w-12&&q.y<=HEIGHT-h-55&&valid(q)).sort((a,b)=>dist(a,p)-dist(b,p));
+    if(edges.length)return edges[0];
+    for(let yy=80;yy<HEIGHT-h-55;yy+=40)for(let xx=30;xx<WIDTH-w-12;xx+=40)if(valid({x:xx,y:yy}))return {x:xx,y:yy};
+    return {x:40,y:80};
+  }
+
   spawnMonster() {
-    if (this.monsters.length > 16) return;
-    const bush = this.bushes[Math.floor(Math.random() * this.bushes.length)];
-    const type = ELEMENTS[Math.floor(Math.random() * ELEMENTS.length)];
-    this.monsters.push(new Monster(bush.x + rand(-8, 24), bush.y + rand(-8, 24), type));
-    this.particles.burst({ x: bush.x + 16, y: bush.y + 16 }, "#77d353", 14);
+    if(this.monsters.filter(m=>!m.dead).length >= (this.level===1?6:10))return;
+    const available=this.bushes.filter(b=>dist(b,this.player)>180);
+    const bush=available[Math.floor(Math.random()*available.length)] || this.bushes[0];
+    const needed=ELEMENTS.filter(t=>!this.tamedElements.has(t)&&!this.monsters.some(m=>!m.dead&&m.type===t));
+    const type=this.level===1 && needed.length?needed[0]:ELEMENTS[this.spawnIndex++%3];
+    const p=this.freeSpot(bush.x+rand(-8,24),bush.y+rand(-8,24));
+    const m=new Monster(p.x,p.y,type);
+    if(this.level===1){m.speed=20;m.dashTimer=6;m.burrowTimer=6;}
+    this.monsters.push(m);
+    this.particles.burst(center(m),"#77d353",14);
+  }
+
+  updateLesson() {
+    const marks=ELEMENTS.map(t=>(this.tamedElements.has(t)?"✓ ":"○ ")+t).join(" · ");
+    const lesson=this.level===1
+      ? "LEVEL 1 · Survive "+Math.min(60,Math.floor(this.elapsed))+" / 60s · Befriend "+marks
+      : "LEVEL 2 · The deeper wildwood · "+Math.floor(this.elapsed)+"s survived";
+    const progress=document.getElementById("lessonProgress");if(progress.textContent!==lesson)progress.textContent=lesson;
+    const active=Object.entries(this.buffs).filter(([,t])=>t>0).map(([k,t])=>(k==="upgrade"?this.upgradeMode+" shots":k==="ace"?"Ace":k+" shield")+" "+Math.ceil(t)+"s");
+    const summons=this.allies.filter(a=>!a.dead&&a.summonLife!==undefined);
+    if(summons.length)active.push("Union: "+summons.length+" helpers · "+Math.ceil(Math.max(...summons.map(a=>a.summonLife)))+"s");
+    const buffText=active.join(" · ") || "Walk over drops to collect them. Red bottles restore 35 health.";
+    const status=document.getElementById("activeBuffs");if(status.textContent!==buffText)status.textContent=buffText;
+  }
+
+  nextLevel() {
+    if(this.state!=="levelcomplete")return;
+    this.level=2;this.elapsed=0;this.state="playing";this.monsters=[];this.spells=[];this.areaAttacks=[];
+    this.spawnTimer=4;this.player.health=this.player.maxHealth;clearInput();
+    document.getElementById("levelCompleteScreen").classList.add("hidden");pauseButton.disabled=false;
+    for(let i=0;i<4;i++)this.spawnMonster();this.updateLesson();canvas.focus({preventScroll:true});
   }
 
   spawnTameSlotItem() {
     if (this.tameSlots >= this.maxTameSlots || this.tameSlotItems.length > 0) return;
-    this.tameSlotItems.push(new TameSlotItem(rand(55, WIDTH - 70), rand(85, HEIGHT - 70)));
+    if(this.level===1)return;
+    const p=this.freeSpot();this.tameSlotItems.push(new TameSlotItem(p.x,p.y));
   }
 
   cast(targetX, targetY) {
@@ -741,7 +797,8 @@ class Game {
     const aimX = targetX ?? origin.x + this.player.facing.x * 100;
     const aimY = targetY ?? origin.y + this.player.facing.y * 100;
     const angle = Math.atan2(aimY - origin.y, aimX - origin.x);
-    this.spells.push(new Spell(origin.x, origin.y, Math.cos(angle) * 420, Math.sin(angle) * 420, skill));
+    const offsets=this.buffs.upgrade>0 && this.upgradeMode==="spread" && skill.element!=="tame"?[-0.23,0,0.23]:[0];
+    for(const offset of offsets)this.spells.push(new Spell(origin.x, origin.y, Math.cos(angle+offset) * 420, Math.sin(angle+offset) * 420, skill));
     this.player.cooldown = skill.cooldown / 1000;
     this.audio.play(skill.element === "tame" ? 500 : 300, 0.06);
   }
@@ -761,7 +818,7 @@ class Game {
       }
       ready.forEach(ally => ally.useSpecial());
     } else {
-      this.areaAttacks.push(new AreaAttack(center(this.player), element, 170, 42));
+      const pulse=new AreaAttack(center(this.player), element, 170, 42);pulse.ace=this.buffs.ace>0;this.areaAttacks.push(pulse);
     }
     this.energy -= ENERGY_PER_CHARGE;
     this.player.cooldown = 0.7;
@@ -771,13 +828,17 @@ class Game {
 
   tryTame(monster) {
     if (monster.dead || !monster.canBeHit("tame")) return;
-    if (this.allies.length >= this.tameSlots) {
+    if(this.level===1 && this.allies.some(a=>!a.dead&&a.summonLife===undefined&&a.type===monster.type)){
+      this.floaters.push(new Floater(monster.x-25,monster.y-15,"Try another element", "#f2dc6d"));return;
+    }
+    if (this.allies.filter(a=>!a.dead&&a.summonLife===undefined).length >= this.tameSlots) {
       this.floaters.push(new Floater(monster.x - 8, monster.y - 8, "No slot", "#f8f0ce"));
       return;
     }
     if (Math.random() < 0.75) {
       monster.dead = true;
       this.allies.push(new Ally(monster));
+      this.tamedElements.add(monster.type);
       this.floaters.push(new Floater(monster.x - 8, monster.y - 8, "Tamed!", "#f2dc6d"));
       this.particles.burst(center(monster), "#f2dc6d", 28);
       this.audio.play(820, 0.1, "triangle");
@@ -789,12 +850,16 @@ class Game {
 
   update(dt) {
     if (this.state !== "playing") return;
+    this.elapsed+=dt;
+    for(const k of Object.keys(this.buffs))this.buffs[k]=Math.max(0,this.buffs[k]-dt);
+    this.potionTimer-=dt;
+    if(this.potionTimer<=0){if(this.pickups.filter(p=>p.kind==="health").length<3){const p=this.freeSpot();this.pickups.push(new Pickup(p.x,p.y,"health"));}this.potionTimer=rand(12,20);}
     this.player.update(dt);
     updateAttackHolds(dt);
     this.spawnTimer -= dt;
     if (this.spawnTimer <= 0) {
       this.spawnMonster();
-      this.spawnTimer = rand(2.2, 4.4);
+      this.spawnTimer = this.level===1?rand(6,9):rand(2.2,4.4);
     }
     this.slotSpawnTimer -= dt;
     if (this.slotSpawnTimer <= 0) {
@@ -802,7 +867,7 @@ class Game {
       this.slotSpawnTimer = rand(13, 20);
     }
 
-    for (const group of [this.monsters, this.allies, this.spells, this.coins, this.treasures, this.tameSlotItems, this.energyDrops, this.areaAttacks, this.floaters]) {
+    for (const group of [this.monsters, this.allies, this.spells, this.coins, this.treasures, this.tameSlotItems, this.energyDrops, this.pickups, this.areaAttacks, this.floaters]) {
       for (const item of group) item.update(dt);
     }
     this.particles.update(dt);
@@ -815,10 +880,26 @@ class Game {
     this.coins = this.coins.filter((coin) => !coin.dead);
     this.tameSlotItems = this.tameSlotItems.filter((item) => !item.dead);
     this.floaters = this.floaters.filter((floater) => floater.life > 0);
+    this.pickups=this.pickups.filter(p=>!p.dead);
+    this.updateLesson();
+    if(this.state==="playing" && this.level===1 && this.elapsed>=60 && this.tamedElements.size===3){
+      this.state="levelcomplete";clearInput();pauseButton.disabled=true;
+      document.getElementById("levelCompleteScreen").classList.remove("hidden");
+      document.getElementById("nextLevelButton").focus({preventScroll:true});
+    }
   }
 
   draw() {
     drawMap(this);
+    for(const o of this.obstacles){
+      ctx.fillStyle="#142d24";ctx.fillRect(o.x-3,o.y+7,o.w+6,o.h);
+      pixelShape(o.x,o.y,[[0,9],[9,0],[o.w-9,0],[o.w,9],[o.w,o.h-7],[o.w-7,o.h],[7,o.h],[0,o.h-7]],"#75816a");
+      ctx.fillStyle="#a3ad83";ctx.fillRect(o.x+9,o.y+3,o.w-18,5);
+      ctx.fillStyle="#526044";ctx.fillRect(o.x+6,o.y+o.h-10,o.w-12,7);
+      ctx.strokeStyle="#45503f";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(o.x+o.w*.65,o.y+6);ctx.lineTo(o.x+o.w*.48,o.y+o.h*.48);ctx.lineTo(o.x+o.w*.61,o.y+o.h*.73);ctx.stroke();
+      for(let i=0;i<3;i++){ctx.fillStyle=i%2?"#759453":"#3e693c";ctx.fillRect(o.x+6+i*9,o.y+o.h-10-i%2*5,10,7);}
+    }
+    for(const p of this.pickups)p.draw();
     for (const treasure of this.treasures) treasure.draw();
     for (const item of this.tameSlotItems) item.draw();
     for (const coin of this.coins) coin.draw();
@@ -919,7 +1000,7 @@ function drawUI(currentGame) {
   ctx.fillText(`Coins ${player.coins}`, 252, 39);
   ctx.fillStyle = "#f8f0ce";
   ctx.fillText(`Skill ${SKILLS[player.selectedSkill].name}`, 390, 39);
-  ctx.fillText(`Allies ${currentGame.allies.length}/${currentGame.tameSlots}`, 560, 39);
+  ctx.fillText(`Allies ${currentGame.allies.filter(a=>a.summonLife===undefined&&!a.dead).length}/${currentGame.tameSlots}`, 560, 39);
   const ready = player.cooldown <= 0 ? "Ready" : `${player.cooldown.toFixed(1)}s`;
   ctx.fillText(ready, 690, 39);
 
@@ -1201,8 +1282,8 @@ class AreaAttack {
     this.age+=dt;
     const radius=this.maxRadius*Math.min(1,this.age/0.4);
     for(const m of game.monsters){
-      if(m.dead||this.hits.has(m)||!m.canBeHit(this.element))continue;
-      if(dist(this,center(m))<=radius+12){this.hits.add(m);m.takeDamage(this.damage,this.element);}
+      if(m.dead||this.hits.has(m)||!m.canBeHit(this.element,this.ace))continue;
+      if(dist(this,center(m))<=radius+12){this.hits.add(m);m.takeDamage(this.damage,this.element,this.ace);}
     }
     if(this.age>=this.life)this.dead=true;
   }
@@ -1254,3 +1335,45 @@ function updateAttackHolds(dt) {
     }
   }
 }
+
+// Axis-separated, swept collision permits sliding without tunneling through rocks.
+function moveActor(actor,dx,dy){
+  const n=Math.max(1,Math.ceil(Math.max(Math.abs(dx),Math.abs(dy))/5));let clear=true;
+  for(let i=0;i<n;i++)for(const [axis,delta,min,max] of [["x",dx/n,8,WIDTH-actor.w-8],["y",dy/n,58,HEIGHT-actor.h-8]]){
+    const old=actor[axis];actor[axis]=clamp(old+delta,min,max);
+    if(game.obstacles.some(o=>rectsOverlap(actor,o))){actor[axis]=old;clear=false;}
+    if(actor[axis]!==old+delta)clear=false;
+  }return clear;
+}
+function walkToward(actor,target,step){
+  const p=center(actor),d=dist(p,target)||1;
+  if(!moveActor(actor,(target.x-p.x)/d*step,(target.y-p.y)/d*step)){
+    // Follow a consistent side of the blocking rock until the direct route opens.
+    moveActor(actor,-(target.y-p.y)/d*step,(target.x-p.x)/d*step);
+  }
+}
+class Pickup {
+  constructor(x,y,kind,type){Object.assign(this,{x,y,kind,type,w:18,h:18,dead:false,age:0});}
+  update(dt){
+    this.age+=dt;if(this.dead||!rectsOverlap(this,game.player))return;
+    if(this.kind==="health" && game.player.health===game.player.maxHealth)return;
+    this.dead=true;
+    let label="";
+    if(this.kind==="shield"){game.buffs[this.type]=10;label=this.type+" shield · 10s";}
+    if(this.kind==="ace"){game.buffs.ace=8;label="Ace · 8s";}
+    if(this.kind==="health"){game.player.health=Math.min(game.player.maxHealth,game.player.health+35);label="+35 health";}
+    if(this.kind==="upgrade"){game.buffs.upgrade=20;game.upgradeMode=Math.random()<.5?"spread":"blast";label=game.upgradeMode+" shots · 20s";}
+    if(this.kind==="union"){
+      for(let i=0;i<5;i++){const p=game.freeSpot(this.x+Math.cos(i*Math.PI*2/5)*40,this.y+Math.sin(i*Math.PI*2/5)*40);const ally=new Ally(new Monster(p.x,p.y,this.type));ally.summonLife=15;game.allies.push(ally);}
+      label=this.type+" union · 15s";
+    }
+    game.floaters.push(new Floater(this.x-30,this.y-14,label,"#ffedb7"));
+  }
+  draw(){
+    const color=this.kind==="health"?"#ed777b":this.kind==="ace"?"#fff0b0":ELEMENT_COLORS[this.type]||"#cfb2ff";
+    ctx.fillStyle="#14251f";ctx.fillRect(this.x-3,this.y-3,24,24);ctx.strokeStyle=color;ctx.strokeRect(this.x-3,this.y-3,24,24);
+    ctx.fillStyle=color;ctx.font="bold 17px sans-serif";ctx.textAlign="center";
+    ctx.fillText({health:"+",shield:"◇",union:"5",upgrade:"↗",ace:"★"}[this.kind],this.x+9,this.y+15);ctx.textAlign="left";
+  }
+}
+document.getElementById("nextLevelButton").addEventListener("click",()=>game.nextLevel());

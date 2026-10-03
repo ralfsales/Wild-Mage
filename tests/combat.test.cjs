@@ -10,10 +10,10 @@ function world() {
   const events={};
   const sandbox = { Math:testMath, document:{getElementById:element,querySelectorAll:()=>[],addEventListener(){}}, window:{addEventListener(name,fn){events[name]=fn;}}, requestAnimationFrame(){},performance:{now:()=>0} };
   vm.createContext(sandbox);
-  vm.runInContext(fs.readFileSync(path.join(__dirname,'../game.js'),'utf8') + '\nthis.api={Monster,Ally,Spell,EnergyOrb,AreaAttack,SKILLS,game,center,keys};',sandbox);
+  vm.runInContext(fs.readFileSync(path.join(__dirname,'../game.js'),'utf8') + '\nthis.api={Monster,Ally,Spell,EnergyOrb,AreaAttack,SKILLS,game,center,keys,Pickup,moveActor};',sandbox);
   sandbox.api.game.state='playing';
   sandbox.api.events=events;
-  sandbox.api.setRandom=value=>testMath.random=()=>value;
+  sandbox.api.setRandom=value=>testMath.random=typeof value==='function'?value:()=>value;
   return sandbox.api;
 }
 test('underground grass monsters reject fire, water, and taming; grass connects',()=>{
@@ -111,7 +111,7 @@ test('charges require a full segment, spend one, and never fall back to a normal
 });
 test('energy only drops on some defeats and is collected up to three charges',()=>{
   const {game,Monster,EnergyOrb,setRandom}=world();setRandom(.8);new Monster(100,100,'water').defeat();assert.equal(game.energyDrops.length,0);
-  setRandom(.1);const m=new Monster(100,100,'fire');m.defeat();m.defeat();assert.equal(game.energyDrops.length,1);assert.equal(game.energy,0);
+  setRandom(.01);const m=new Monster(100,100,'fire');m.defeat();m.defeat();assert.equal(game.energyDrops.length,1);assert.equal(game.energy,0);
   const orb=new EnergyOrb(game.player.x,game.player.y);game.energy=8;orb.update(0);orb.update(0);assert.equal(game.energy,9);
   const excess=new EnergyOrb(game.player.x,game.player.y);excess.update(0);assert.equal(excess.dead,false);assert.equal(game.energy,9);
   game.energy=6;excess.update(0);assert.equal(game.energy,7);
@@ -155,4 +155,59 @@ test('unfunded holds do not cast or repeat, and pausing cancels pending taps',()
   down('f');game.update(.51);events.keyup({key:'f'});assert.equal(game.spells.length,0);assert.equal(game.areaAttacks.length,0);
   down('d');down('Escape');events.keyup({key:'d'});assert.equal(game.state,'paused');assert.equal(game.spells.length,0);
   down('Escape');game.update(.6);assert.equal(game.areaAttacks.length,0);
+});
+
+test('tutorial caps living foes at six and replenishes missing elemental types',()=>{
+  const {game,setRandom}=world();setRandom(.5);for(let i=0;i<30;i++)game.spawnMonster();
+  assert.equal(game.monsters.length,6);assert.equal(new Set(game.monsters.map(m=>m.type)).size,3);
+  game.monsters.forEach(m=>{if(m.type==='grass')m.dead=true;});game.spawnMonster();assert.equal(game.monsters.at(-1).type,'grass');
+  assert.ok(game.monsters.filter(m=>!m.dead).length<=6);
+});
+test('completion needs both a minute and all three actual tames; next level preserves progress',()=>{
+  const {game,Monster,setRandom}=world();setRandom(0);game.elapsed=59;game.player.coins=8;game.energy=3;
+  for(const t of ['fire','water','grass'])game.tryTame(new Monster(100,100,t));assert.equal(game.tamedElements.size,3);
+  game.update(.1);assert.equal(game.state,'playing');game.elapsed=60;game.allies[0].dead=true;game.update(.01);assert.equal(game.state,'levelcomplete');
+  const elapsed=game.elapsed;game.update(10);assert.equal(game.elapsed,elapsed);
+  game.nextLevel();assert.equal(game.level,2);assert.equal(game.state,'playing');assert.equal(game.player.coins,8);assert.equal(game.energy,3);assert.equal(game.player.health,120);
+  game.reset();game.state='playing';game.elapsed=70;game.update(.01);assert.equal(game.state,'playing');assert.equal(game.tamedElements.size,0);
+});
+test('duplicate tutorial allies cannot fill all slots and union summons do not count',()=>{
+  const {game,Monster,Pickup,setRandom}=world();setRandom(0);game.tryTame(new Monster(100,100,'fire'));game.tryTame(new Monster(100,100,'fire'));
+  assert.equal(game.allies.length,1);new Pickup(game.player.x,game.player.y,'union','fire').update(0);assert.equal(game.allies.length,6);assert.equal(game.tamedElements.size,1);
+  game.tryTame(new Monster(100,100,'water'));game.tryTame(new Monster(100,100,'grass'));assert.equal(game.tamedElements.size,3);
+  for(const a of game.allies)a.update(15.1);assert.equal(game.allies.filter(a=>!a.dead&&a.summonLife!==undefined).length,0);
+});
+test('rock collisions block walking, fire dashes, and spells without tunneling',()=>{
+  const {game,Monster,Spell,SKILLS,moveActor}=world();game.obstacles=[{x:150,y:100,w:40,h:80}];game.player.x=100;game.player.y=115;
+  moveActor(game.player,100,0);assert.ok(game.player.x+game.player.w<=150);
+  const m=new Monster(100,115,'fire');m.dashState='dashing';m.dashTimer=.65;m.dashDirection={x:1,y:0};m.updateDash(.3,game.player);assert.ok(m.x+m.w<=150);assert.equal(m.dashState,'recovery');
+  const spell=new Spell(145,120,420,0,SKILLS[0]);spell.update(.02);assert.equal(spell.dead,true);
+  const p=game.freeSpot(160,120);assert.ok(p.x+25<=150||p.x>=190||p.y+28<=100||p.y>=180);
+});
+test('bonus drops use a single ten percent gate, always include coins, and retain source type',()=>{
+  for(const [roll,expected] of [[.099,true],[.1,false],[.9,false]]){
+    const {game,Monster,setRandom}=world();setRandom(roll);new Monster(100,100,'water').defeat();assert.ok(game.coins.length>=2);assert.equal(game.energyDrops.length+game.pickups.length,expected?1:0);
+  }
+  for(const [selection,kind] of [[.3,'shield'],[.5,'union'],[.7,'upgrade'],[.9,'ace']]){
+    const {game,Monster,setRandom}=world();const m=new Monster(100,100,'grass');
+    const values=[0,0,0,0,0,0,0,.01,selection];let n=0;setRandom(()=>values[n++]??0);m.defeat();
+    assert.equal(game.pickups.length,1);assert.equal(game.pickups[0].type,'grass');assert.equal(game.pickups[0].kind,kind);assert.equal(game.energyDrops.length,0);
+  }
+});
+test('element shields and Ace protect only for their duration; pauses freeze buffs',()=>{
+  const {game,Pickup}=world();const pick=k=>new Pickup(game.player.x,game.player.y,k,'fire').update(0);
+  pick('shield');game.player.takeDamage(20,'fire');assert.equal(game.player.health,120);game.player.takeDamage(10,'water');assert.equal(game.player.health,110);
+  game.player.invulnerable=0;pick('ace');game.player.takeDamage(20,'grass');assert.equal(game.player.health,110);
+  game.state='paused';game.update(3);assert.equal(game.buffs.ace,8);game.state='playing';game.update(10.1);game.player.invulnerable=0;game.player.takeDamage(10,'fire');assert.equal(game.player.health,100);
+});
+test('upgrades spread or explode and Ace damages protected foes',()=>{
+  const {game,Pickup,Monster,Spell,SKILLS,setRandom,center}=world();setRandom(0);new Pickup(game.player.x,game.player.y,'upgrade').update(0);game.cast();assert.equal(game.spells.length,3);assert.notEqual(game.spells[0].vy,game.spells[2].vy);
+  setRandom(.8);new Pickup(game.player.x,game.player.y,'upgrade').update(0);game.buffs.ace=8;
+  const a=new Monster(100,100,'grass');a.burrowState='underground';const b=new Monster(135,100,'fire');b.dashState='dashing';game.monsters=[a,b];const p=center(a);new Spell(p.x,p.y,0,0,SKILLS[0]).update(0);
+  assert.equal(game.areaAttacks.length,1);game.areaAttacks[0].update(.4);assert.equal(a.health,38);assert.equal(b.health,38);
+  game.buffs.upgrade=0;game.player.cooldown=0;game.spells=[];game.cast();assert.equal(game.spells.length,1);
+});
+test('random health potions respect the field cap, heal, and wait at full health',()=>{
+  const {game,Pickup}=world();for(let i=0;i<5;i++){game.potionTimer=0;game.update(.01);}assert.equal(game.pickups.filter(p=>p.kind==='health').length,3);
+  const p=new Pickup(game.player.x,game.player.y,'health');p.update(0);assert.equal(p.dead,false);game.player.health=100;p.update(0);assert.equal(game.player.health,120);assert.equal(p.dead,true);
 });

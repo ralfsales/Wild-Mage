@@ -45,7 +45,7 @@ Strong attacks deal extra damage.
 
 Taming has a 75% chance of success.
 
-The player starts with 1 tame slot. Glowing charm items can randomly appear on the map, and each charm unlocks 1 extra tame slot. The maximum number of tame slots is 5.
+The player starts with 3 tame slots. Level one allows one permanent ally per element. After level one, Glowing charm items can randomly appear on the map, and each charm unlocks 1 extra tame slot. The maximum number of tame slots is 5.
 
 Tamed allies do not damage the player. Allies are also immune to the element they are strong against: Fire allies ignore Grass attacks, Water allies ignore Fire attacks, and Grass allies ignore Water attacks.
 
@@ -117,6 +117,14 @@ Tap and release F, D, S, or A for the normal attack. Hold the key for 0.5 second
 | F | Fire pulse expanding around the mage |
 | A | Command ready tamed allies to use their specials |
 
-A charged action consumes one full energy segment. The meter stores up to three charges. Each defeated enemy has a 20% chance to drop a violet energy orb; collect three orbs to fill one segment. Energy starts empty, never regenerates over time, and is not granted by taming. Orbs remain on the ground when storage is full.
+A charged action consumes one full energy segment. The meter stores up to three charges. Each defeated enemy has a 10% total chance to drop one bonus item, chosen equally from energy, shield, rare union, attack upgrade, and Ace. Energy orbs give one energy point; collect three orbs to fill one segment. Energy starts empty, never regenerates over time, and is not granted by taming. Orbs remain on the ground when storage is full.
 
 Player area attacks have a 170-pixel radius and deal 42 base damage once per enemy. Elemental bonuses and monster immunities still apply. Water waves stop firebird dashes; Grass earthquakes hit underground bushes. Fire allies dash, Grass allies burrow and erupt, and Water allies release a wave. Ally specials target enemies only. An ally command with no ready allies or eligible targets does not spend energy. Pausing or leaving the window cancels pending held inputs.
+
+## Level one: the first lesson
+
+Survive 60 seconds and successfully tame fire, water, and grass to unlock the level-two continuation. Taming discoveries persist even if an ally dies. Three enemies start the lesson, at most six hostile foes are alive, and a new spawn is attempted every 6–9 seconds. Missing elemental types are prioritized. Four solid rock obstacles block grounded movement and normal projectiles; burrowing passes underneath. The expandable field guide explains all controls and objectives.
+
+Every defeated foe drops coins, with one independent 10% roll for a bonus item (not a 10% roll per category). Shield grants immunity to its source element for 10 seconds. Rare union summons five source-element helpers for 15 seconds without consuming slots or counting as tames. Attack upgrade randomly grants three spread shots or a 75-pixel explosion for 20 seconds. Ace grants mage immunity and universal bonus spell damage for 8 seconds, bypassing burrow/dash defenses. Recollecting a buff refreshes its timer. Health potions appear every 12–20 seconds (maximum three waiting), restore 35 health, and remain if health is full. All timers freeze while paused.
+
+Level two keeps coins, energy, and allies, restores health, and continues in the clearing with up to ten foes and faster spawning. It is a playable continuation, not a separate completed campaign.

@@ -25,7 +25,7 @@
         <div class="panel">
           <div class="sigil" aria-hidden="true">✦</div><p class="eyebrow">THE FOREST IS CALLING</p>
           <h2>Into the<br><em>Wildwood.</em></h2>
-          <p>Master the elements. Befriend the wild.<br>Find your magic in an untamed forest.</p>
+          <p>A gentle first lesson: survive 60 seconds<br>and tame one foe of each element.</p>
           <button id="startButton" class="primary-button" type="button">Begin adventure <span aria-hidden="true">→</span></button>
 
           <p class="start-tip">Arrow keys to explore · Tap F / D / S / A to cast · Hold for a charged move</p>
@@ -34,11 +34,24 @@
       <div id="pauseScreen" class="overlay hidden">
         <div class="panel"><div class="sigil" aria-hidden="true">☾</div><p class="eyebrow">TAKE A BREATHER</p><h2>Forest at rest.</h2><p>Your adventure will be here when you return.</p><button id="resumeButton" class="primary-button" type="button">Resume adventure →</button><p class="start-tip">Or press Escape to continue</p></div>
       </div>
+      <div id="levelCompleteScreen" class="overlay hidden"><div class="panel"><p class="eyebrow">CLEARING COMPLETE</p><h2>Three elements.<br>One team.</h2><p>You survived a minute and befriended fire, water, and grass. Your health is restored when you enter the next area.</p><button id="nextLevelButton" class="primary-button" type="button">Enter level two →</button></div></div>
       <div id="gameOverScreen" class="overlay hidden">
         <div class="panel"><p class="eyebrow">EVERY END IS A BEGINNING</p><h2>A spell<br>to remember.</h2><p id="finalScore">Final coins: 0</p><button id="restartButton" class="primary-button" type="button">Try again →</button><p class="start-tip">Press R to begin a new adventure</p></div>
       </div>
     </section>
 
+    <section class="field-guide" aria-label="Tutorial and objectives"><p id="lessonProgress" role="status">LEVEL 1 · Survive 60 seconds · Tame fire, water, and grass</p><p id="activeBuffs">Walk over drops to collect them. Red bottles restore 35 health.</p>
+      <details open><summary>How to play · Your first minute</summary><div class="guide-grid">
+      <p><strong>1 · Explore & attack</strong>Move with arrow keys. Face a foe and tap F (fire), D (water), or S (grass). Select a spell card and click the field to aim. Rocks block movement and shots.</p>
+      <p><strong>2 · Befriend all three</strong>Get close and tap A toward a foe: each attempt has a 75% chance. No need to hurt it first. You have three slots; level one keeps one friend per element. Your discoveries stay checked even if a friend falls.</p>
+      <p><strong>3 · Charge your magic</strong>Collect violet energy from defeated foes: three orbs fill one charge, up to three charges. Hold F, D, or S for half a second for a fire pulse, water wave, or earthquake. Hold A to command your allies’ special moves. Each uses one full charge.</p>
+      <p><strong>4 · Read the warning</strong>Dodge a fire bird’s dash or stop it with water. Only grass hits a buried bush; move away from its eruption warning. Tame these foes once they return to their normal state. Survive 60 seconds and tame all three elements to unlock level two.</p>
+      </div></details>
+      <details><summary>Field drops · Coins guaranteed, 10% chance of one bonus item</summary><div class="guide-grid">
+      <p><strong>◇ Element shield · 10s</strong>Immunity to the element of the foe that dropped it.</p><p><strong>5 Rare union · 15s</strong>Five temporary helpers of the defeated foe’s element. They use no taming slots and do not count toward your lesson.</p>
+      <p><strong>↗ Attack upgrade · 20s</strong>Randomly gives three spreading shots or an exploding shot. Applies to regular elemental attacks.</p><p><strong>★ Ace · 8s</strong>Your spells hit every element, including buried or dashing foes, with bonus damage. You take no damage.</p>
+      <p><strong>Violet energy</strong>One energy point toward your next charge. Full energy leaves the orb on the ground.</p><p><strong>Coins & health</strong>Every defeated foe drops coins. Red health bottles appear around the clearing at random intervals and heal 35 health.</p>
+      </div></details></section>
     <section class="spell-section" aria-label="Spell selection">
       <div class="section-label"><span>YOUR SPELLBOOK</span><span>Tap key: normal · Hold key: charged · Click field: normal</span></div>
       <div class="spell-grid">
