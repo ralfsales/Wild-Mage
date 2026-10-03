@@ -8,6 +8,24 @@ const finalScore = document.getElementById("finalScore");
 const startButton = document.getElementById("startButton");
 const restartButton = document.getElementById("restartButton");
 const muteButton = document.getElementById("muteButton");
+const pauseButton = document.getElementById("pauseButton");
+const pauseScreen = document.getElementById("pauseScreen");
+const resumeButton = document.getElementById("resumeButton");
+const spellButtons = [...document.querySelectorAll("[data-skill]")];
+
+function selectSkill(index) {
+  game.player.selectedSkill = index;
+  spellButtons.forEach((button, i) => button.setAttribute("aria-pressed", String(i === index)));
+}
+
+function setPaused(paused) {
+  if (game.state !== "playing" && game.state !== "paused") return;
+  game.state = paused ? "paused" : "playing";
+  keys.clear();
+  pauseScreen.classList.toggle("hidden", !paused);
+  pauseButton.innerHTML = paused ? "Resume <kbd>Esc</kbd>" : "Pause <kbd>Esc</kbd>";
+  (paused ? resumeButton : canvas).focus({ preventScroll: true });
+}
 
 const WIDTH = canvas.width;
 const HEIGHT = canvas.height;
@@ -501,15 +519,24 @@ class Game {
   start() {
     this.reset();
     this.state = "playing";
+    keys.clear();
+    selectSkill(0);
+    pauseScreen.classList.add("hidden");
+    pauseButton.disabled = false;
+    pauseButton.innerHTML = "Pause <kbd>Esc</kbd>";
     startScreen.classList.add("hidden");
     gameOverScreen.classList.add("hidden");
     for (let i = 0; i < 5; i++) this.spawnMonster();
+    canvas.focus({ preventScroll: true });
   }
 
   end() {
     this.state = "gameover";
+    keys.clear();
+    pauseButton.disabled = true;
     finalScore.textContent = `Final coins: ${this.player.coins}`;
     gameOverScreen.classList.remove("hidden");
+    restartButton.focus({ preventScroll: true });
   }
 
   makeDecor() {
@@ -712,11 +739,16 @@ function canvasPoint(event) {
 
 window.addEventListener("keydown", (event) => {
   const key = event.key.toLowerCase();
+  if (key === "escape" && !event.repeat) {
+    setPaused(game.state === "playing");
+    return;
+  }
+  if (key === " " && event.target instanceof HTMLButtonElement) return;
   if (["arrowup", "arrowdown", "arrowleft", "arrowright", " "].includes(key)) event.preventDefault();
   keys.add(key);
   const skillIndex = SKILLS.findIndex((skill) => skill.key === key);
-  if (skillIndex >= 0) {
-    game.player.selectedSkill = skillIndex;
+  if (skillIndex >= 0 && game.state === "playing") {
+    selectSkill(skillIndex);
     if (game.state === "playing" && !event.repeat) game.cast();
   }
   if (key === " " && game.state === "playing") game.cast();
@@ -733,8 +765,22 @@ startButton.addEventListener("click", () => game.start());
 restartButton.addEventListener("click", () => game.start());
 muteButton.addEventListener("click", () => {
   soundMuted = !soundMuted;
-  muteButton.textContent = soundMuted ? "S" : "On";
+  muteButton.textContent = soundMuted ? "Sound off" : "Sound on";
+  muteButton.setAttribute("aria-pressed", String(soundMuted));
+  muteButton.setAttribute("aria-label", soundMuted ? "Sound muted. Enable sound" : "Sound enabled. Mute sound");
   if (!soundMuted) game.audio.play(440, 0.05);
+});
+
+pauseButton.addEventListener("click", () => setPaused(game.state === "playing"));
+resumeButton.addEventListener("click", () => setPaused(false));
+spellButtons.forEach((button, index) => button.addEventListener("click", () => {
+  if (game.state !== "playing") return;
+  selectSkill(index);
+  canvas.focus({ preventScroll: true });
+}));
+window.addEventListener("blur", () => { keys.clear(); setPaused(true); });
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) { keys.clear(); setPaused(true); }
 });
 
 game = new Game();

@@ -3,50 +3,46 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Wildwood Mage</title>
+  <meta name="theme-color" content="#101c19" />
+  <title>Wild Mage — Into the Wildwood</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <main class="game-shell">
     <header class="title-bar">
-      <div>
-        <p class="eyebrow">Pixel RPG</p>
-        <h1>Wildwood Mage</h1>
-      </div>
-      <button id="muteButton" class="icon-button" type="button" title="Toggle sound">S</button>
+      <a class="brand" href="./" aria-label="Wild Mage home"><span class="brand-mark" aria-hidden="true">✦</span><span>WILD MAGE<small>A WILDWOOD ADVENTURE</small></span></a>
+      <div class="header-actions"><button id="pauseButton" type="button" disabled>Pause <kbd>Esc</kbd></button><button id="muteButton" type="button" aria-pressed="true" aria-label="Sound muted. Enable sound">Sound off</button></div>
     </header>
-
-    <section class="canvas-frame" aria-label="Wildwood Mage game">
-      <canvas id="gameCanvas" width="960" height="640"></canvas>
-
+    <div class="world-heading"><div><p class="eyebrow">CHAPTER I · THE WILDWOOD</p><h1>A little magic. A wild adventure.</h1></div><span class="world-tag"><i></i> Enchanted clearing</span></div>
+    <section class="canvas-frame" aria-label="Wild Mage game">
+      <canvas id="gameCanvas" width="960" height="640" tabindex="0" aria-label="Game field. Move with arrow keys. F fire, D water, S grass, A tame. Escape pauses.">Your browser needs Canvas support to play Wild Mage.</canvas>
       <div id="startScreen" class="overlay">
         <div class="panel">
-          <h2>Wildwood Mage</h2>
-          <p>Defeat elemental monsters, collect dropped coins, and tame wild foes into allies.</p>
-          <div class="controls-grid">
-            <span>Move</span><strong>Arrow keys</strong>
-            <span>Attacks</span><strong>F Fire / D Water / S Grass / A Tame</strong>
-            <span>Aim</span><strong>Face a direction or click the map</strong>
-          </div>
-          <button id="startButton" type="button">Start Adventure</button>
+          <div class="sigil" aria-hidden="true">✦</div><p class="eyebrow">THE FOREST IS CALLING</p>
+          <h2>Into the<br><em>Wildwood.</em></h2>
+          <p>Master the elements. Befriend the wild.<br>Find your magic in an untamed forest.</p>
+          <button id="startButton" class="primary-button" type="button">Begin adventure <span aria-hidden="true">→</span></button>
+          <p class="start-tip">Arrow keys to explore · F / D / S / A to cast</p>
         </div>
       </div>
-
+      <div id="pauseScreen" class="overlay hidden">
+        <div class="panel"><div class="sigil" aria-hidden="true">☾</div><p class="eyebrow">TAKE A BREATHER</p><h2>Forest at rest.</h2><p>Your adventure will be here when you return.</p><button id="resumeButton" class="primary-button" type="button">Resume adventure →</button><p class="start-tip">Or press Escape to continue</p></div>
+      </div>
       <div id="gameOverScreen" class="overlay hidden">
-        <div class="panel">
-          <h2>Game Over</h2>
-          <p id="finalScore">Final coins: 0</p>
-          <button id="restartButton" type="button">Restart</button>
-        </div>
+        <div class="panel"><p class="eyebrow">EVERY END IS A BEGINNING</p><h2>A spell<br>to remember.</h2><p id="finalScore">Final coins: 0</p><button id="restartButton" class="primary-button" type="button">Try again →</button><p class="start-tip">Press R to begin a new adventure</p></div>
       </div>
     </section>
-
-    <footer class="hint-bar">
-      <span>Tip: glowing charms unlock more slots for taming monsters.</span>
-      <span>Element chain: Water beats Fire, Fire beats Grass, Grass beats Water.</span>
-    </footer>
+    <section class="spell-section" aria-label="Spell selection">
+      <div class="section-label"><span>YOUR SPELLBOOK</span><span>Select a spell · Click the field to cast</span></div>
+      <div class="spell-grid">
+        <button class="spell-card" data-skill="0" style="--spell:#f29a65" aria-pressed="true"><span class="spell-icon" aria-hidden="true">✹</span><span><strong>Fire</strong><small>Strong against grass</small></span><kbd>F</kbd></button>
+        <button class="spell-card" data-skill="1" style="--spell:#7bcddd" aria-pressed="false"><span class="spell-icon" aria-hidden="true">≈</span><span><strong>Water</strong><small>Strong against fire</small></span><kbd>D</kbd></button>
+        <button class="spell-card" data-skill="2" style="--spell:#b2d88a" aria-pressed="false"><span class="spell-icon" aria-hidden="true">❧</span><span><strong>Grass</strong><small>Strong against water</small></span><kbd>S</kbd></button>
+        <button class="spell-card" data-skill="3" style="--spell:#e4c77d" aria-pressed="false"><span class="spell-icon" aria-hidden="true">✧</span><span><strong>Tame</strong><small>Turn a foe into a friend</small></span><kbd>A</kbd></button>
+      </div>
+    </section>
+    <footer class="hint-bar"><span><b>FIELD NOTES</b> Collect glowing charms to unlock more ally slots.</span><span>Move <kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd> · Pause <kbd>Esc</kbd></span></footer>
   </main>
-
   <script src="game.js"></script>
 </body>
 </html>

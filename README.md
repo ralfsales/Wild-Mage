@@ -74,3 +74,12 @@ Wild-Mage/
 - Music and sound effects
 - Player upgrades
 - Save and load support
+
+## Interface and accessibility
+
+- A woodland-themed welcome screen and responsive spellbook show each element's strength.
+- Click a spell card to select it, then click the field to aim and cast. Keyboard spell shortcuts still select and cast immediately.
+- Press Escape or use Pause to pause/resume. Switching tabs or leaving the window pauses the adventure automatically; resume when ready.
+- Sound starts muted and has an explicitly labeled toggle.
+- Visible focus indicators and focus return to the game field support keyboard navigation.
+- Movement requires a keyboard; touch movement is not implemented.
