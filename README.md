@@ -105,3 +105,18 @@ During the dash only Water attacks connect. Water deals its normal elemental bon
 Character creation is being developed separately in `character-creator/`. It is not integrated into gameplay yet. The game starts directly with its fixed mage appearance.
 
 Run the gameplay checks with `node --test tests/combat.test.cjs`.
+
+## Charged attacks and energy
+
+Tap and release F, D, S, or A for the normal attack. Hold the key for 0.5 seconds to use its charged move once; release before charging again. A growing ring shows the hold progress. No modifier key is needed.
+
+| Hold | Charged move |
+| --- | --- |
+| D | Water wave expanding around the mage |
+| S | Grass earthquake expanding around the mage |
+| F | Fire pulse expanding around the mage |
+| A | Command ready tamed allies to use their specials |
+
+A charged action consumes one full energy segment. The meter stores up to three charges. Each defeated enemy has a 20% chance to drop a violet energy orb; collect three orbs to fill one segment. Energy starts empty, never regenerates over time, and is not granted by taming. Orbs remain on the ground when storage is full.
+
+Player area attacks have a 170-pixel radius and deal 42 base damage once per enemy. Elemental bonuses and monster immunities still apply. Water waves stop firebird dashes; Grass earthquakes hit underground bushes. Fire allies dash, Grass allies burrow and erupt, and Water allies release a wave. Ally specials target enemies only. An ally command with no ready allies or eligible targets does not spend energy. Pausing or leaving the window cancels pending held inputs.

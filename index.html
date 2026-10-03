@@ -28,7 +28,7 @@
           <p>Master the elements. Befriend the wild.<br>Find your magic in an untamed forest.</p>
           <button id="startButton" class="primary-button" type="button">Begin adventure <span aria-hidden="true">→</span></button>
 
-          <p class="start-tip">Arrow keys to explore · F / D / S / A to cast</p>
+          <p class="start-tip">Arrow keys to explore · Tap F / D / S / A to cast · Hold for a charged move</p>
         </div>
       </div>
       <div id="pauseScreen" class="overlay hidden">
@@ -40,7 +40,7 @@
     </section>
 
     <section class="spell-section" aria-label="Spell selection">
-      <div class="section-label"><span>YOUR SPELLBOOK</span><span>Select a spell · Click the field to cast</span></div>
+      <div class="section-label"><span>YOUR SPELLBOOK</span><span>Tap key: normal · Hold key: charged · Click field: normal</span></div>
       <div class="spell-grid">
         <button class="spell-card" data-skill="0" style="--spell:#f29a65" aria-pressed="true"><span class="spell-icon" aria-hidden="true">✹</span><span><strong>Fire</strong><small>Strong against grass</small></span><kbd>F</kbd></button>
         <button class="spell-card" data-skill="1" style="--spell:#7bcddd" aria-pressed="false"><span class="spell-icon" aria-hidden="true">≈</span><span><strong>Water</strong><small>Strong against fire</small></span><kbd>D</kbd></button>
@@ -48,7 +48,7 @@
         <button class="spell-card" data-skill="3" style="--spell:#e4c77d" aria-pressed="false"><span class="spell-icon" aria-hidden="true">✧</span><span><strong>Tame</strong><small>Turn a foe into a friend</small></span><kbd>A</kbd></button>
       </div>
     </section>
-    <footer class="hint-bar"><span><b>FIELD NOTES</b> Grass (S) hits burrowing bushes. Water (D) stops firebird dashes. Dodge marked attacks.</span><span>Move <kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd> · Pause <kbd>Esc</kbd></span></footer>
+    <footer class="hint-bar"><span><b>FIELD NOTES</b> Hold F/D/S for charged pulses; hold A for ally specials. Collect violet energy: 3 orbs = 1 charge, max 3.</span><span>Move <kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd> · Pause <kbd>Esc</kbd></span></footer>
   </main>
 
   <script src="game.js"></script>

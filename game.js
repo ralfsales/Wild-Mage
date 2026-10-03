@@ -22,7 +22,7 @@ function setPaused(paused) {
 
   if (game.state !== "playing" && game.state !== "paused") return;
   game.state = paused ? "paused" : "playing";
-  keys.clear();
+  clearInput();
   pauseScreen.classList.toggle("hidden", !paused);
   pauseButton.innerHTML = paused ? "Resume <kbd>Esc</kbd>" : "Pause <kbd>Esc</kbd>";
   (paused ? resumeButton : canvas).focus({ preventScroll: true });
@@ -45,7 +45,12 @@ const SKILLS = [
   { key: "a", name: "Tame", element: "tame", damage: 0, cooldown: 850, range: 80 },
 ];
 
+const ENERGY_PER_CHARGE = 3;
+const MAX_CHARGES = 3;
+const ENERGY_DROP_CHANCE = 0.2;
 const keys = new Set();
+const attackHolds = new Map();
+const CHARGE_HOLD_SECONDS = 0.5;
 let game;
 let lastTime = 0;
 let soundMuted = true;
@@ -345,6 +350,7 @@ class Monster {
     for (let i = 0; i < count; i++) {
       game.coins.push(new Coin(this.x + rand(-10, 22), this.y + rand(-10, 22), 1));
     }
+    if (Math.random() < ENERGY_DROP_CHANCE) game.energyDrops.push(new EnergyOrb(this.x, this.y));
     if (Math.random() < 0.16) game.treasures.push(new Treasure(this.x, this.y));
     game.audio.play(180, 0.08);
   }
@@ -378,9 +384,51 @@ class Ally extends Monster {
     this.health = Math.max(28, monster.health);
     this.speed = 88;
     this.attackCooldown = 0;
+    this.special = null;
+  }
+
+  useSpecial() {
+    const target = game.monsters.filter(m => !m.dead && m.canBeHit(this.type)).sort((a,b) => dist(this,a)-dist(this,b))[0];
+    if (!target || this.dead || this.special) return false;
+    if (this.type === "water") {
+      game.areaAttacks.push(new AreaAttack(center(this), "water", 160, 36));
+      this.special = { kind: "rest", time: 0.7 };
+    } else {
+      const from = center(this), to = center(target), d = Math.hypot(to.x-from.x,to.y-from.y) || 1;
+      this.special = { kind: this.type, time: this.type === "fire" ? 0.65 : 0.9, direction: {x:(to.x-from.x)/d,y:(to.y-from.y)/d}, target, hits: new Set() };
+      if (this.type === "fire") { this.dashState = "dashing"; this.dashDirection = this.special.direction; }
+      else { this.burrowState = "underground"; this.trail = []; }
+    }
+    return true;
+  }
+
+  updateSpecial(dt) {
+    const s = this.special;
+    const duration = Math.min(dt, s.time);
+    s.time -= dt;
+    if (s.kind === "fire") {
+      const steps = Math.max(1, Math.ceil(420 * duration / 6));
+      for (let i=0;i<steps;i++) {
+        this.x = clamp(this.x+s.direction.x*420*duration/steps,8,WIDTH-this.w-8);
+        this.y = clamp(this.y+s.direction.y*420*duration/steps,58,HEIGHT-this.h-8);
+        for (const m of game.monsters) if (!m.dead && !s.hits.has(m) && m.canBeHit("fire") && rectsOverlap(this,m)) { s.hits.add(m); m.takeDamage(36,"fire"); }
+      }
+    } else if (s.kind === "grass") {
+      if (!s.target.dead) {
+        const from=center(this),to=center(s.target),d=dist(from,to);
+        const step=Math.min(d,210*duration);
+        if(d>0){this.x=clamp(this.x+(to.x-from.x)/d*step,8,WIDTH-this.w-8);this.y=clamp(this.y+(to.y-from.y)/d*step,58,HEIGHT-this.h-8);}
+      }
+      this.trail.forEach(p=>p.life-=dt);this.trail=this.trail.filter(p=>p.life>0);
+      this.trail.push({x:this.x,y:this.y,life:0.3});
+      if(s.time<=0) game.areaAttacks.push(new AreaAttack(center(this),"grass",110,36));
+    }
+    if(s.time<=0){this.special=null;this.dashState="ready";this.burrowState="surface";this.attackCooldown=0.6;}
   }
 
   update(dt) {
+    if (this.dead) return;
+    if (this.special) { this.animationTime += dt * 7; this.updateSpecial(dt); return; }
     this.animationTime += dt * 7;
     this.attackCooldown = Math.max(0, this.attackCooldown - dt);
     const target = game.monsters
@@ -624,6 +672,9 @@ class Game {
     this.allies = [];
     this.spells = [];
     this.coins = [];
+    this.energy = 0;
+    this.energyDrops = [];
+    this.areaAttacks = [];
     this.treasures = [];
     this.tameSlotItems = [];
     this.floaters = [];
@@ -644,7 +695,7 @@ class Game {
   start() {
     this.reset();
     this.state = "playing";
-    keys.clear();
+    clearInput();
     selectSkill(0);
     pauseScreen.classList.add("hidden");
     pauseButton.disabled = false;
@@ -657,7 +708,7 @@ class Game {
 
   end() {
     this.state = "gameover";
-    keys.clear();
+    clearInput();
     pauseButton.disabled = true;
     finalScore.textContent = `Final coins: ${this.player.coins}`;
     gameOverScreen.classList.remove("hidden");
@@ -695,6 +746,29 @@ class Game {
     this.audio.play(skill.element === "tame" ? 500 : 300, 0.06);
   }
 
+  castCharged() {
+    if (this.state !== "playing" || this.player.cooldown > 0) return false;
+    const element = SKILLS[this.player.selectedSkill].element;
+    if (this.energy < ENERGY_PER_CHARGE) {
+      this.floaters.push(new Floater(this.player.x - 30, this.player.y - 20, "Need a full charge", "#bbabed"));
+      return false;
+    }
+    if (element === "tame") {
+      const ready = this.allies.filter(ally => !ally.dead && !ally.special && this.monsters.some(m => !m.dead && m.canBeHit(ally.type)));
+      if (!ready.length) {
+        this.floaters.push(new Floater(this.player.x - 30, this.player.y - 20, "No allies ready / no targets", "#bbabed"));
+        return false;
+      }
+      ready.forEach(ally => ally.useSpecial());
+    } else {
+      this.areaAttacks.push(new AreaAttack(center(this.player), element, 170, 42));
+    }
+    this.energy -= ENERGY_PER_CHARGE;
+    this.player.cooldown = 0.7;
+    this.audio.play(620, 0.15, "triangle");
+    return true;
+  }
+
   tryTame(monster) {
     if (monster.dead || !monster.canBeHit("tame")) return;
     if (this.allies.length >= this.tameSlots) {
@@ -716,6 +790,7 @@ class Game {
   update(dt) {
     if (this.state !== "playing") return;
     this.player.update(dt);
+    updateAttackHolds(dt);
     this.spawnTimer -= dt;
     if (this.spawnTimer <= 0) {
       this.spawnMonster();
@@ -727,7 +802,7 @@ class Game {
       this.slotSpawnTimer = rand(13, 20);
     }
 
-    for (const group of [this.monsters, this.allies, this.spells, this.coins, this.treasures, this.tameSlotItems, this.floaters]) {
+    for (const group of [this.monsters, this.allies, this.spells, this.coins, this.treasures, this.tameSlotItems, this.energyDrops, this.areaAttacks, this.floaters]) {
       for (const item of group) item.update(dt);
     }
     this.particles.update(dt);
@@ -735,6 +810,8 @@ class Game {
     this.monsters = this.monsters.filter((monster) => !monster.dead);
     this.allies = this.allies.filter((ally) => !ally.dead);
     this.spells = this.spells.filter((spell) => !spell.dead);
+    this.energyDrops = this.energyDrops.filter(item => !item.dead);
+    this.areaAttacks = this.areaAttacks.filter(item => !item.dead);
     this.coins = this.coins.filter((coin) => !coin.dead);
     this.tameSlotItems = this.tameSlotItems.filter((item) => !item.dead);
     this.floaters = this.floaters.filter((floater) => floater.life > 0);
@@ -745,12 +822,23 @@ class Game {
     for (const treasure of this.treasures) treasure.draw();
     for (const item of this.tameSlotItems) item.draw();
     for (const coin of this.coins) coin.draw();
+    for (const orb of this.energyDrops) orb.draw();
     for (const spell of this.spells) spell.draw();
     for (const ally of this.allies) ally.draw();
     for (const monster of this.monsters) monster.draw();
     this.player.draw();
+    for (const attack of this.areaAttacks) attack.draw();
     this.particles.draw();
     for (const floater of this.floaters) floater.draw();
+    for (const hold of attackHolds.values()) {
+      if (hold.triggered) continue;
+      const p = center(this.player);
+      ctx.strokeStyle = this.energy >= ENERGY_PER_CHARGE ? ELEMENT_COLORS[SKILLS[hold.index].element] : "#85768f";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 26, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.min(1, hold.elapsed / CHARGE_HOLD_SECONDS));
+      ctx.stroke();
+    }
     drawUI(this);
   }
 }
@@ -835,6 +923,8 @@ function drawUI(currentGame) {
   const ready = player.cooldown <= 0 ? "Ready" : `${player.cooldown.toFixed(1)}s`;
   ctx.fillText(ready, 690, 39);
 
+  drawChargeMeter(currentGame);
+
   SKILLS.forEach((skill, index) => {
     const x = 810 + index * 32;
     ctx.fillStyle = index === player.selectedSkill ? "#f8f0ce" : "#3a2f27";
@@ -876,13 +966,24 @@ window.addEventListener("keydown", (event) => {
   const skillIndex = SKILLS.findIndex((skill) => skill.key === key);
   if (skillIndex >= 0 && game.state === "playing") {
     selectSkill(skillIndex);
-    if (game.state === "playing" && !event.repeat) game.cast();
+    if (game.state === "playing" && !event.repeat && !attackHolds.has(key)) {
+      attackHolds.set(key, { index: skillIndex, elapsed: 0, triggered: false });
+    }
   }
-  if (key === " " && game.state === "playing") game.cast();
+  if (key === " " && game.state === "playing" && !event.repeat) game.cast();
   if (key === "r" && game.state === "gameover") game.start();
 });
 
-window.addEventListener("keyup", (event) => keys.delete(event.key.toLowerCase()));
+window.addEventListener("keyup", (event) => {
+  const key = event.key.toLowerCase();
+  keys.delete(key);
+  const hold = attackHolds.get(key);
+  attackHolds.delete(key);
+  if (hold && !hold.triggered && game.state === "playing") {
+    selectSkill(hold.index);
+    game.cast();
+  }
+});
 canvas.addEventListener("click", (event) => {
   const point = canvasPoint(event);
   game.cast(point.x, point.y);
@@ -905,9 +1006,9 @@ spellButtons.forEach((button, index) => button.addEventListener("click", () => {
   selectSkill(index);
   canvas.focus({ preventScroll: true });
 }));
-window.addEventListener("blur", () => { keys.clear(); setPaused(true); });
+window.addEventListener("blur", () => { clearInput(); setPaused(true); });
 document.addEventListener("visibilitychange", () => {
-  if (document.hidden) { keys.clear(); setPaused(true); }
+  if (document.hidden) { clearInput(); setPaused(true); }
 });
 
 game = new Game();
@@ -1068,4 +1169,88 @@ function drawFireDash(monster) {
   pixelRect(-39, -13 + flicker, 3, 3, '#f2b75c');
   pixelRect(-48, 8 - flicker, 4, 2, '#e77939');
   ctx.restore();
+}
+
+class EnergyOrb {
+  constructor(x,y) { this.x=x;this.y=y;this.w=14;this.h=14;this.dead=false;this.phase=0; }
+  update(dt) {
+    if(this.dead)return;
+    this.phase+=dt*4;
+    if(game.energy<ENERGY_PER_CHARGE*MAX_CHARGES && rectsOverlap(this,game.player)) {
+      game.energy=Math.min(ENERGY_PER_CHARGE*MAX_CHARGES,game.energy+1);
+      this.dead=true;
+      game.floaters.push(new Floater(this.x,this.y-14,"+1 energy","#c9acff"));
+      game.audio.play(760,0.1,"sine");
+    }
+  }
+  draw(){
+    const y=this.y+Math.sin(this.phase)*2;
+    ctx.fillStyle='#b68aff33';ctx.beginPath();ctx.arc(this.x+7,y+7,13,0,Math.PI*2);ctx.fill();
+    pixelShape(this.x,y,[[7,-1],[14,7],[7,15],[0,7]],'#a879ef');
+    pixelShape(this.x,y,[[7,2],[11,7],[7,11],[4,7]],'#eee0ff');
+  }
+}
+
+class AreaAttack {
+  constructor(origin,element,radius,damage){
+    this.x=origin.x;this.y=origin.y;this.element=element;this.maxRadius=radius;this.damage=damage;
+    this.age=0;this.life=0.6;this.dead=false;this.hits=new Set();
+  }
+  update(dt){
+    if(this.dead)return;
+    this.age+=dt;
+    const radius=this.maxRadius*Math.min(1,this.age/0.4);
+    for(const m of game.monsters){
+      if(m.dead||this.hits.has(m)||!m.canBeHit(this.element))continue;
+      if(dist(this,center(m))<=radius+12){this.hits.add(m);m.takeDamage(this.damage,this.element);}
+    }
+    if(this.age>=this.life)this.dead=true;
+  }
+  draw(){
+    const radius=this.maxRadius*Math.min(1,this.age/0.4);
+    ctx.save();ctx.globalAlpha=Math.max(0,1-this.age/this.life);
+    ctx.strokeStyle=ELEMENT_COLORS[this.element];ctx.lineWidth=this.element==='water'?7:4;
+    ctx.beginPath();ctx.arc(this.x,this.y,radius,0,Math.PI*2);ctx.stroke();
+    if(this.element==='grass'){
+      ctx.strokeStyle='#d9bb75';ctx.lineWidth=3;
+      for(let i=0;i<12;i++){const a=i*Math.PI/6;ctx.beginPath();ctx.moveTo(this.x+Math.cos(a)*radius*.3,this.y+Math.sin(a)*radius*.3);ctx.lineTo(this.x+Math.cos(a+.1)*radius*.65,this.y+Math.sin(a+.1)*radius*.65);ctx.lineTo(this.x+Math.cos(a)*radius,this.y+Math.sin(a)*radius);ctx.stroke();}
+    }else{
+      ctx.lineWidth=2;ctx.beginPath();ctx.arc(this.x,this.y,radius*.72,0,Math.PI*2);ctx.stroke();
+      for(let i=0;i<16;i++){const a=i*Math.PI/8;pixelRect(this.x+Math.cos(a)*radius-3,this.y+Math.sin(a)*radius-3,6,this.element==='fire'?10:4,this.element==='fire'?'#ffd87a':'#cbf9ff');}
+    }
+    ctx.restore();
+  }
+}
+
+function drawChargeMeter(currentGame){
+  const full=Math.floor(currentGame.energy/ENERGY_PER_CHARGE);
+  ctx.fillStyle='#111421e8';ctx.fillRect(12,HEIGHT-43,480,31);
+  ctx.fillStyle='#e2d2ff';ctx.font="12px 'Courier New'";
+  ctx.fillText(`ENERGY ${full}/3`,23,HEIGHT-23);
+  for(let i=0;i<MAX_CHARGES;i++){
+    const x=111+i*43,amount=clamp(currentGame.energy-i*ENERGY_PER_CHARGE,0,ENERGY_PER_CHARGE);
+    ctx.fillStyle='#362c49';ctx.fillRect(x,HEIGHT-34,36,13);
+    ctx.fillStyle=amount===ENERGY_PER_CHARGE?'#c3a1ff':'#7958a6';ctx.fillRect(x,HEIGHT-34,36*amount/ENERGY_PER_CHARGE,13);
+    ctx.strokeStyle='#c3a1ff';ctx.strokeRect(x,HEIGHT-34,36,13);
+  }
+  ctx.fillStyle=full?'#e8dfff':'#a79db7';
+  ctx.fillText(full?'Hold F / D / S / A':'Collect dropped violet energy',247,HEIGHT-23);
+}
+
+
+function clearInput() {
+  keys.clear();
+  attackHolds.clear();
+}
+
+function updateAttackHolds(dt) {
+  for (const hold of attackHolds.values()) {
+    if (hold.triggered) continue;
+    hold.elapsed += dt;
+    if (hold.elapsed >= CHARGE_HOLD_SECONDS) {
+      hold.triggered = true;
+      selectSkill(hold.index);
+      game.castCharged();
+    }
+  }
 }
