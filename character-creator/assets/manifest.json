@@ -30,8 +30,8 @@
     "colors": ["darkBrown", "brown", "blond", "ruivo", "purple", "white", "green", "pink"]
   },
   "mouth": {
-    "status": "approved-reference-needs-individual-transparent-overlays",
-    "shapes": ["thin-smile", "thin-straight", "thin-surprised", "thick-smile", "thick-straight", "thick-surprised"],
+    "status": "in-progress",
+    "shapes": ["thin-smile", "thin-straight", "thick-smile", "thick-straight"],
     "colors": ["none", "softPink", "red", "plum"]
   }
 }
