@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "canvas": {"recommendedWidth": 512, "recommendedHeight": 512},
   "layers": ["body", "eyes", "mouth", "skinFeatures", "hair", "clothing", "boots", "hat", "hold"],
   "body": {
@@ -12,6 +12,18 @@
     "mid": "eyes/mid.png",
     "narrow": "eyes/narrow.png",
     "colors": ["black", "brown", "blue", "green", "yellow", "pink"]
+  },
+  "mouth": {
+    "thinSmile": "mouth/thin-smile.png",
+    "thinStraight": "mouth/thin-straight.png",
+    "thickSmile": "mouth/thick-smile.png",
+    "thickStraight": "mouth/thick-straight.png",
+    "colors": ["none", "softPink", "red", "plum"]
+  },
+  "skinFeatures": {
+    "freckles": "skin-features/freckles.png",
+    "trimmedBeard": "skin-features/trimmed-beard.png",
+    "beardColorSource": "hair"
   },
   "hair": {
     "bald": "hair/bald.png",
@@ -28,10 +40,5 @@
     "dreads": "hair/dreads.png",
     "blackPower": "hair/blackpower.png",
     "colors": ["darkBrown", "brown", "blond", "ruivo", "purple", "white", "green", "pink"]
-  },
-  "mouth": {
-    "status": "in-progress",
-    "shapes": ["thin-smile", "thin-straight", "thick-smile", "thick-straight"],
-    "colors": ["none", "softPink", "red", "plum"]
   }
 }
