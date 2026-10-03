@@ -10,7 +10,7 @@ function world() {
   const events={};
   const sandbox = { Math:testMath, document:{getElementById:element,querySelectorAll:()=>[],addEventListener(){}}, window:{addEventListener(name,fn){events[name]=fn;}}, requestAnimationFrame(){},performance:{now:()=>0} };
   vm.createContext(sandbox);
-  vm.runInContext(fs.readFileSync(path.join(__dirname,'../game.js'),'utf8') + '\nthis.api={Monster,Ally,Spell,EnergyOrb,AreaAttack,SKILLS,game,center,keys,Pickup,moveActor};',sandbox);
+  vm.runInContext(fs.readFileSync(path.join(__dirname,'../game.js'),'utf8') + '\nthis.api={Monster,Ally,Spell,EnergyOrb,AreaAttack,SKILLS,game,center,keys,Pickup,moveActor,Coin,TameSlotItem};',sandbox);
   sandbox.api.game.state='playing';
   sandbox.api.events=events;
   sandbox.api.setRandom=value=>testMath.random=typeof value==='function'?value:()=>value;
@@ -210,4 +210,24 @@ test('upgrades spread or explode and Ace damages protected foes',()=>{
 test('random health potions respect the field cap, heal, and wait at full health',()=>{
   const {game,Pickup}=world();for(let i=0;i<5;i++){game.potionTimer=0;game.update(.01);}assert.equal(game.pickups.filter(p=>p.kind==='health').length,3);
   const p=new Pickup(game.player.x,game.player.y,'health');p.update(0);assert.equal(p.dead,false);game.player.health=100;p.update(0);assert.equal(game.player.health,120);assert.equal(p.dead,true);
+});
+
+
+test('all spawned collectibles expire at ten seconds before collection',()=>{
+  const {game,Pickup,EnergyOrb,Coin,TameSlotItem}=world();
+  const items=[...['shield','union','upgrade','ace','health'].map(k=>new Pickup(50,80,k,'fire')),new EnergyOrb(50,80),new Coin(50,80,1),new TameSlotItem(50,80)];
+  for(const item of items){item.update(9.99);assert.ok(!item.dead);game.player.x=50;game.player.y=80;item.update(.011);assert.equal(item.dead,true);game.player.x=480;game.player.y=320;}
+  assert.equal(game.energy,0);assert.equal(game.player.coins,0);assert.equal(game.tameSlots,3);assert.equal(game.allies.length,0);assert.equal(game.buffs.fire,0);
+});
+test('pause freezes pickup lifetime and expired drops are removed from the field',()=>{
+  const {game,Pickup,EnergyOrb,Coin,TameSlotItem}=world();
+  game.pickups=[new Pickup(50,80,'shield','fire')];game.energyDrops=[new EnergyOrb(50,80)];game.coins=[new Coin(50,80,1)];game.tameSlotItems=[new TameSlotItem(50,80)];
+  game.state='paused';game.update(20);assert.equal(game.pickups[0].age,0);
+  game.state='playing';game.spawnTimer=100;game.potionTimer=100;game.slotSpawnTimer=100;game.update(10);
+  for(const group of [game.pickups,game.energyDrops,game.coins,game.tameSlotItems])assert.equal(group.length,0);
+});
+test('collecting before expiry applies the buff for its full duration',()=>{
+  const {game,Pickup}=world();const item=new Pickup(50,80,'shield','fire');item.update(9);
+  game.player.x=50;game.player.y=80;item.update(.5);assert.equal(item.dead,true);assert.equal(game.buffs.fire,10);
+  item.update(20);assert.equal(game.buffs.fire,10);
 });

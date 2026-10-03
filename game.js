@@ -48,6 +48,7 @@ const SKILLS = [
 const ENERGY_PER_CHARGE = 3;
 const MAX_CHARGES = 3;
 const ITEM_DROP_CHANCE = 0.1;
+const PICKUP_LIFETIME = 10;
 const keys = new Set();
 const attackHolds = new Map();
 const CHARGE_HOLD_SECONDS = 0.5;
@@ -531,6 +532,7 @@ class Coin {
   }
 
   update(dt) {
+    if (expirePickup(this, dt)) return;
     this.spin += dt * 8;
     if (rectsOverlap(this, game.player)) {
       game.player.coins += this.value;
@@ -589,6 +591,7 @@ class TameSlotItem {
   }
 
   update(dt) {
+    if (expirePickup(this, dt)) return;
     this.pulse += dt * 5;
     if (rectsOverlap(this, game.player)) {
       game.tameSlots = Math.min(game.maxTameSlots, game.tameSlots + 1);
@@ -1224,16 +1227,6 @@ function drawBurrow(monster) {
 }
 
 function drawDashWarning(monster) {
-  const origin = center(monster), direction = monster.dashDirection;
-  const end = {
-    x: clamp(origin.x + direction.x * 273, 8 + monster.w / 2, WIDTH - 8 - monster.w / 2),
-    y: clamp(origin.y + direction.y * 273, 58 + monster.h / 2, HEIGHT - 8 - monster.h / 2),
-  };
-  ctx.strokeStyle = '#ffbb70';
-  ctx.lineWidth = 2;
-  ctx.setLineDash([6, 6]);
-  ctx.beginPath(); ctx.moveTo(origin.x, origin.y); ctx.lineTo(end.x, end.y); ctx.stroke();
-  ctx.setLineDash([]);
   ctx.fillStyle = '#ffe1a1'; ctx.font = "bold 18px 'Courier New'";
   ctx.fillText('!', monster.x + 9, monster.y - 13);
 }
@@ -1255,7 +1248,7 @@ function drawFireDash(monster) {
 class EnergyOrb {
   constructor(x,y) { this.x=x;this.y=y;this.w=14;this.h=14;this.dead=false;this.phase=0; }
   update(dt) {
-    if(this.dead)return;
+    if(expirePickup(this,dt))return;
     this.phase+=dt*4;
     if(game.energy<ENERGY_PER_CHARGE*MAX_CHARGES && rectsOverlap(this,game.player)) {
       game.energy=Math.min(ENERGY_PER_CHARGE*MAX_CHARGES,game.energy+1);
@@ -1355,7 +1348,7 @@ function walkToward(actor,target,step){
 class Pickup {
   constructor(x,y,kind,type){Object.assign(this,{x,y,kind,type,w:18,h:18,dead:false,age:0});}
   update(dt){
-    this.age+=dt;if(this.dead||!rectsOverlap(this,game.player))return;
+    if(expirePickup(this,dt)||!rectsOverlap(this,game.player))return;
     if(this.kind==="health" && game.player.health===game.player.maxHealth)return;
     this.dead=true;
     let label="";
@@ -1377,3 +1370,11 @@ class Pickup {
   }
 }
 document.getElementById("nextLevelButton").addEventListener("click",()=>game.nextLevel());
+
+// Field lifetime uses simulation time, so pausing freezes uncollected drops.
+function expirePickup(item, dt) {
+  if (item.dead) return true;
+  item.age = (item.age || 0) + dt;
+  if (item.age >= PICKUP_LIFETIME) item.dead = true;
+  return !!item.dead;
+}
