@@ -27,11 +27,31 @@ Open `character-creator/index.html` from a local web server or GitHub Pages.
 
 `styles.css` contains the Wildwood creator styling.
 
-`sprites.js` is the current vector sprite layer library and renderer. Each character part is drawn as an independent layer, which is the same architecture that will later accept polished transparent PNG/SVG sprites without changing the saved character model.
+`sprites.js` is the shared layered character renderer. Skin, eyes, mouth, features, clothing, hats and held items are still vector placeholders and can be upgraded category by category.
+
+`hair-sprites.js` is the first production sprite-backed layer. It loads aligned transparent SVG assets from `assets/hair/`, applies the currently selected hair colour, and plugs directly into the same character renderer used by the live preview and thumbnails.
 
 `app.js` owns UI state, randomize/reset/save controls and localStorage persistence.
 
 Saved state key: `wildMageCharacterDraftV1`.
+
+## Hair sprite assets
+
+All hair assets share a `320 × 400` viewBox and are aligned to the same head position. `bald` intentionally has no sprite.
+
+- `assets/hair/moicano.svg`
+- `assets/hair/curly-short.svg`
+- `assets/hair/coil.svg`
+- `assets/hair/militar.svg`
+- `assets/hair/side-part.svg`
+- `assets/hair/chanel.svg`
+- `assets/hair/straight-long.svg`
+- `assets/hair/curly-long.svg`
+- `assets/hair/ponytail.svg`
+- `assets/hair/dreads.svg`
+- `assets/hair/black-power.svg`
+
+One neutral sprite is reused for all eight hair colours, so adding or adjusting a colour does not require duplicate image files.
 
 ## Integration later
 
@@ -47,4 +67,4 @@ The game should import the same character state and renderer rather than rebuild
 8. hat
 9. held magic item
 
-The current vector art is a functional placeholder for the polished chibi sprites we approved. We can replace each layer one category at a time while keeping the UI and data model unchanged.
+The creator remains isolated from the current game. Once all categories have production sprites, the renderer and saved character object can be connected to the main game without changing the customization model.
