@@ -19,7 +19,7 @@ function selectSkill(index) {
 }
 
 function setPaused(paused) {
-  if (typeof mageCustomizerOpen === "function" && mageCustomizerOpen()) return;
+
   if (game.state !== "playing" && game.state !== "paused") return;
   game.state = paused ? "paused" : "playing";
   keys.clear();
@@ -864,7 +864,7 @@ function canvasPoint(event) {
 }
 
 window.addEventListener("keydown", (event) => {
-  if (typeof mageCustomizerOpen === "function" && mageCustomizerOpen()) return;
+
   const key = event.key.toLowerCase();
   if (key === "escape" && !event.repeat) {
     setPaused(game.state === "playing");
@@ -888,7 +888,7 @@ canvas.addEventListener("click", (event) => {
   game.cast(point.x, point.y);
 });
 
-startButton.addEventListener("click", () => openMageCustomizer(true));
+startButton.addEventListener("click", () => game.start());
 restartButton.addEventListener("click", () => game.start());
 muteButton.addEventListener("click", () => {
   soundMuted = !soundMuted;
