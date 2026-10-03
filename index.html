@@ -6,12 +6,17 @@
   <meta name="theme-color" content="#101c19" />
   <title>Wild Mage — Into the Wildwood</title>
   <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="customizer.css" />
 </head>
 <body>
   <main class="game-shell">
     <header class="title-bar">
       <a class="brand" href="./" aria-label="Wild Mage home"><span class="brand-mark" aria-hidden="true">✦</span><span>WILD MAGE<small>A WILDWOOD ADVENTURE</small></span></a>
-      <div class="header-actions"><button id="pauseButton" type="button" disabled>Pause <kbd>Esc</kbd></button><button id="muteButton" type="button" aria-pressed="true" aria-label="Sound muted. Enable sound">Sound off</button></div>
+      <div class="header-actions">
+        <button id="customizeButton" type="button">Customize mage</button>
+        <button id="pauseButton" type="button" disabled>Pause <kbd>Esc</kbd></button>
+        <button id="muteButton" type="button" aria-pressed="true" aria-label="Sound muted. Enable sound">Sound off</button>
+      </div>
     </header>
     <div class="world-heading"><div><p class="eyebrow">CHAPTER I · THE WILDWOOD</p><h1>A little magic. A wild adventure.</h1></div><span class="world-tag"><i></i> Enchanted clearing</span></div>
     <section class="canvas-frame" aria-label="Wild Mage game">
@@ -22,6 +27,7 @@
           <h2>Into the<br><em>Wildwood.</em></h2>
           <p>Master the elements. Befriend the wild.<br>Find your magic in an untamed forest.</p>
           <button id="startButton" class="primary-button" type="button">Begin adventure <span aria-hidden="true">→</span></button>
+          <button id="startCustomizeButton" class="secondary-button" type="button">Customize your mage ✦</button>
           <p class="start-tip">Arrow keys to explore · F / D / S / A to cast</p>
         </div>
       </div>
@@ -32,6 +38,7 @@
         <div class="panel"><p class="eyebrow">EVERY END IS A BEGINNING</p><h2>A spell<br>to remember.</h2><p id="finalScore">Final coins: 0</p><button id="restartButton" class="primary-button" type="button">Try again →</button><p class="start-tip">Press R to begin a new adventure</p></div>
       </div>
     </section>
+
     <section class="spell-section" aria-label="Spell selection">
       <div class="section-label"><span>YOUR SPELLBOOK</span><span>Select a spell · Click the field to cast</span></div>
       <div class="spell-grid">
@@ -43,6 +50,48 @@
     </section>
     <footer class="hint-bar"><span><b>FIELD NOTES</b> Grass (S) hits burrowing bushes. Water (D) stops firebird dashes. Dodge marked attacks.</span><span>Move <kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd> · Pause <kbd>Esc</kbd></span></footer>
   </main>
+
+  <div id="mageCustomizer" class="customizer-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="customizerTitle">
+    <section class="customizer-panel">
+      <header class="customizer-header">
+        <div><p class="eyebrow">YOUR WILD MAGE</p><h2 id="customizerTitle">Shape your adventurer.</h2><p>Choose a style, then tint it with one of eight colours.</p></div>
+        <button id="closeCustomizer" class="icon-button" type="button" aria-label="Close customizer">×</button>
+      </header>
+
+      <div class="customizer-layout">
+        <div class="mage-preview-card">
+          <span class="preview-badge">LIVE PREVIEW</span>
+          <canvas id="magePreview" width="320" height="380" aria-label="Custom mage preview"></canvas>
+          <div class="preview-name"><strong>Wildwood Mage</strong><small id="previewPresetName">Rafael preset</small></div>
+        </div>
+
+        <div class="customizer-controls">
+          <div id="partTabs" class="part-tabs" role="tablist" aria-label="Character parts"></div>
+          <div class="option-panel">
+            <div class="option-heading"><div><span class="control-kicker">STYLE</span><strong id="currentPartLabel">Hair</strong></div><span id="styleCounter">1 / 8</span></div>
+            <div class="style-picker">
+              <button id="previousStyle" class="arrow-button" type="button" aria-label="Previous style">‹</button>
+              <div class="style-name"><span id="currentStyleName">Short wavy</span><small id="currentStyleHint">Soft, short waves</small></div>
+              <button id="nextStyle" class="arrow-button" type="button" aria-label="Next style">›</button>
+            </div>
+
+            <div class="colour-section">
+              <div class="option-heading"><span class="control-kicker">COLOUR</span><span id="colourName">Dark brown</span></div>
+              <div id="colourSwatches" class="colour-swatches" aria-label="Colour choices"></div>
+            </div>
+          </div>
+
+          <div class="customizer-actions">
+            <button id="randomizeMage" type="button">Randomize ✦</button>
+            <button id="resetMage" type="button">Reset sample</button>
+            <button id="saveMage" class="save-mage" type="button">Save mage →</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
   <script src="game.js"></script>
+  <script src="customizer.js"></script>
 </body>
 </html>
