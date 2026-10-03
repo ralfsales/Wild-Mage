@@ -1,7 +1,18 @@
 {
-  "version": 2,
+  "version": 3,
   "canvas": {"recommendedWidth": 512, "recommendedHeight": 512},
-  "layers": ["body", "eyes", "mouth", "skinFeatures", "hair", "clothing", "boots", "hat", "hold"],
+  "layers": ["body", "eyes", "freckles", "beard", "mouth", "hair", "clothing", "boots", "hat", "hold"],
+  "alignment": {
+    "centerX": 256,
+    "headBounds": {"x":154,"y":20,"width":204,"height":205},
+    "browLineY": 109,
+    "eyeLineY": 136,
+    "frecklesZone": {"x":185,"y":145,"width":142,"height":28},
+    "mouthLineY": 185,
+    "beardZone": {"x":187,"y":164,"width":138,"height":60},
+    "chinLineY": 225,
+    "rule": "Beard is rendered below mouth and must leave the mouth area visible."
+  },
   "body": {
     "fair": "body/body-fair.png",
     "medium": "body/body-medium.png",
@@ -23,7 +34,8 @@
   "skinFeatures": {
     "freckles": "skin-features/freckles.png",
     "trimmedBeard": "skin-features/trimmed-beard.png",
-    "beardColorSource": "hair"
+    "beardColorSource": "hair",
+    "beardLayer": "below-mouth"
   },
   "hair": {
     "bald": "hair/bald.png",
