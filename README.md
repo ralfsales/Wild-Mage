@@ -130,3 +130,5 @@ Every defeated foe drops coins, with one independent 10% roll for a bonus item (
 Level two keeps coins, energy, and allies, restores health, and continues in the clearing with up to ten foes and faster spawning. It is a playable continuation, not a separate completed campaign.
 
 All spawned collectibles (coins, bonus items, energy, health potions, and slot charms) vanish after 10 seconds of active gameplay if uncollected. Collection does not change the existing buff durations. Placed treasure chests remain part of the map. Fire birds retain their windup animation and exclamation mark, but no attack trajectory line is drawn. Underground earth movement remains visible.
+
+Charged spell visuals use element-specific canvas effects: water crests with curling foam and spray, branching earthquake fissures with airborne stones and dust, and a flame-front fire pulse with hot cores and embers. Visuals use simulation time and freeze on pause; combat timing and damage are unchanged.
