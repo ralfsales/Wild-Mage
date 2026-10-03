@@ -1,56 +1,50 @@
 {
-  "version": 3,
+  "version": 28,
+  "status": "approved-final",
   "canvas": {"recommendedWidth": 512, "recommendedHeight": 512},
-  "layers": ["body", "eyes", "freckles", "beard", "mouth", "hair", "clothing", "boots", "hat", "hold"],
-  "alignment": {
-    "centerX": 256,
-    "headBounds": {"x":154,"y":20,"width":204,"height":205},
-    "browLineY": 109,
-    "eyeLineY": 136,
-    "frecklesZone": {"x":185,"y":145,"width":142,"height":28},
-    "mouthLineY": 185,
-    "beardZone": {"x":187,"y":164,"width":138,"height":60},
-    "chinLineY": 225,
-    "rule": "Beard is rendered below mouth and must leave the mouth area visible."
-  },
+  "layers": ["body", "eyes", "freckles", "mouth", "beard", "hair", "clothing", "boots", "hat", "hold"],
   "body": {
     "fair": "body/body-fair.png",
     "medium": "body/body-medium.png",
-    "dark": "body/body-dark.png"
+    "dark": "body/body-dark.png",
+    "nose": "part of body sprite; stronger definition required on medium/dark"
   },
   "eyes": {
-    "round": "eyes/round.png",
-    "mid": "eyes/mid.png",
-    "narrow": "eyes/narrow.png",
-    "colors": ["black", "brown", "blue", "green", "yellow", "pink"]
+    "round": {"asset": "eyes/round.png", "x": 0, "y": -103, "scale": 31},
+    "mid": {"asset": "eyes/mid.png", "x": 0, "y": -103, "scale": 35},
+    "narrow": {"asset": "eyes/narrow.png", "x": 0, "y": -103, "scale": 34},
+    "colors": ["black", "brown", "blue", "green", "yellow", "pink"],
+    "colorBehavior": "recolor iris pixels inside each eye sprite variant; no separate iris layer"
   },
   "mouth": {
-    "thinSmile": "mouth/thin-smile.png",
-    "thinStraight": "mouth/thin-straight.png",
-    "thickSmile": "mouth/thick-smile.png",
-    "thickStraight": "mouth/thick-straight.png",
-    "colors": ["none", "softPink", "red", "plum"]
+    "thinSmile": {"asset": "mouth/thin-smile.png", "x": 0, "y": -55, "scale": 40},
+    "thinStraight": {"asset": "mouth/thin-straight.png", "x": 0, "y": -56, "scale": 45},
+    "thickSmile": {"asset": "mouth/thick-smile.png", "x": 0, "y": -52, "scale": 15},
+    "thickStraight": {"asset": "mouth/thick-straight.png", "x": 0, "y": -51, "scale": 15},
+    "colors": ["skin", "redLipstick", "plumLipstick"]
   },
   "skinFeatures": {
-    "freckles": "skin-features/freckles.png",
-    "trimmedBeard": "skin-features/trimmed-beard.png",
+    "freckles": {"asset": "skin-features/freckles.png", "x": 0, "y": -73, "scale": 34},
+    "trimmedBeard": {"asset": "skin-features/trimmed-beard.png", "x": 0, "y": -70, "scale": 47},
     "beardColorSource": "hair",
-    "beardLayer": "below-mouth"
+    "layerRule": "beard below hair"
   },
   "hair": {
-    "bald": "hair/bald.png",
-    "moicano": "hair/moicano.png",
-    "curlyShort": "hair/curly-short.png",
-    "coil": "hair/coil.png",
-    "militar": "hair/militar.png",
-    "sidePart": "hair/side-part.png",
-    "chanel": "hair/chanel.png",
-    "bob": "hair/bob.png",
-    "straightLong": "hair/straight-long.png",
-    "curlyLong": "hair/curly-long.png",
-    "ponytail": "hair/ponytail.png",
-    "dreads": "hair/dreads.png",
-    "blackPower": "hair/blackpower.png",
-    "colors": ["darkBrown", "brown", "blond", "ruivo", "purple", "white", "green", "pink"]
-  }
+    "bald": {"asset": "hair/bald.png", "x": 0, "y": 0, "scale": 100},
+    "moicano": {"asset": "hair/moicano.png", "x": -13, "y": -6, "scale": 122},
+    "curlyShort": {"asset": "hair/curly-short.png", "x": 0, "y": 7, "scale": 133},
+    "coil": {"asset": "hair/coil.png", "x": -4, "y": -8, "scale": 128},
+    "militar": {"asset": "hair/militar.png", "x": -4, "y": 50, "scale": 169},
+    "sidePart": {"asset": "hair/side-part.png", "x": -3, "y": 24, "scale": 127},
+    "chanel": {"asset": "hair/chanel.png", "x": 1, "y": 47, "scale": 140},
+    "bob": {"asset": "hair/bob.png", "x": 0, "y": -131, "scale": 61},
+    "straightLong": {"asset": "hair/straight-long.png", "x": -1, "y": -74, "scale": 71},
+    "curlyLong": {"asset": "hair/curly-long.png", "x": -1, "y": -96, "scale": 69},
+    "ponytail": {"asset": "hair/ponytail.png", "x": 11, "y": -142, "scale": 69},
+    "dreads": {"asset": "hair/dreads.png", "x": -4, "y": -120, "scale": 63},
+    "blackPower": {"asset": "hair/blackpower.png", "x": -6, "y": -151, "scale": 63},
+    "colors": ["darkBrown", "brown", "blond", "ruivo", "purple", "white", "green", "pink"],
+    "layerRule": "hair is above beard; body is below hair"
+  },
+  "ui": {"placementControls": false, "featureSelectionOnly": true}
 }
