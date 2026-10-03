@@ -93,3 +93,9 @@ Wild grass monsters periodically dig down and pursue their target underground, l
 A gold circle warns of the eruption for 0.75 seconds. The bush stops moving during this warning, then deals 14 Grass damage within the marked area and rests above ground for 1.1 seconds. Move out of the circle or defeat it with Grass before it erupts. Tamed bushes stay above ground.
 
 Run combat checks with `node --test tests/combat.test.cjs`. Open `tests/visual-preview.html` through a local web server to inspect the character artwork and burrowing states.
+
+## Fire bird dash
+
+Fire monsters are flame birds with beating wings, a crest, beak, and talons. A 0.7-second dashed-line warning locks the charge direction. The bird then becomes a fireball traveling at 420 pixels/second for up to 0.65 seconds, stopping at the map edge. Step sideways to dodge: the dash does not track you after the warning starts.
+
+During the dash only Water attacks connect. Water deals its normal elemental bonus damage and quenches the dash immediately, leaving the bird exposed for 1.4 seconds. Fire, Grass, and Tame spells pass through it. A dash deals 20 Fire damage at most once per target, then has 0.9 seconds of recovery. Tamed fire birds keep their appearance but use normal ally attacks.

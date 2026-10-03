@@ -66,3 +66,35 @@ test('pause freezes burrow timers and rendering accepts every creature state',()
   }
   game.player.draw();
 });
+
+test('fire dash rejects non-water spells; water damages and quenches it',()=>{
+  const {Monster,Spell,SKILLS,game,center}=world(); const bird=new Monster(100,100,'fire');
+  bird.dashState='dashing';bird.dashTimer=.65;game.monsters=[bird];
+  for(const element of ['fire','grass','tame']){
+    const skill=SKILLS.find(s=>s.element===element),p=center(bird);
+    const spell=new Spell(p.x,p.y,0,0,skill);spell.update(0);assert.equal(spell.dead,false);
+    bird.takeDamage(200,element); assert.equal(bird.health,80);assert.equal(bird.dashState,'dashing');
+  }
+  game.tryTame(bird);assert.equal(game.allies.length,0);
+  const p=center(bird),spell=new Spell(p.x,p.y,0,0,SKILLS[1]);spell.update(0);
+  assert.equal(spell.dead,true);assert.equal(bird.health,38);assert.equal(bird.dashState,'recovery');
+  const x=bird.x;bird.update(.2);assert.equal(bird.x,x);
+});
+test('fire dash locks its aim, can be dodged, and has a finite recovery',()=>{
+  const {Monster,game}=world(); const bird=new Monster(100,100,'fire');game.player.x=240;game.player.y=97.5;
+  bird.dashTimer=0;bird.update(.01);assert.equal(bird.dashState,'windup');
+  const direction={...bird.dashDirection};game.player.y=300;bird.update(.71);assert.equal(bird.dashState,'dashing');
+  bird.update(.3);assert.equal(bird.dashDirection.y,direction.y);assert.equal(bird.y,100);assert.ok(bird.x>220);assert.equal(game.player.health,120);
+  bird.update(.4);assert.equal(bird.dashState,'recovery');bird.update(1);assert.equal(bird.dashState,'ready');
+});
+test('dash sweeps collisions without tunneling and damages each target once',()=>{
+  const {Monster,game}=world();const bird=new Monster(100,100,'fire');game.player.x=180;game.player.y=100;
+  bird.dashState='dashing';bird.dashTimer=.65;bird.update(.4);assert.equal(game.player.health,100);
+  game.player.invulnerable=0;game.player.x=bird.x;bird.update(.01);assert.equal(game.player.health,100);
+});
+test('fire dash stops at map edge, pauses correctly, and renders warning/fireball',()=>{
+  const {Monster,game}=world();const bird=new Monster(920,100,'fire');bird.dashState='dashing';bird.dashTimer=.65;game.monsters=[bird];
+  game.state='paused';game.update(1);assert.equal(bird.x,920);assert.equal(bird.dashTimer,.65);
+  bird.draw();bird.update(.1);assert.equal(bird.x,927);assert.equal(bird.dashState,'recovery');
+  bird.dashState='windup';bird.draw();
+});

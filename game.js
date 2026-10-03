@@ -159,6 +159,10 @@ class Monster {
     this.burrowState = "surface";
     this.burrowTimer = rand(3, 5);
     this.trail = [];
+    this.dashState = "ready";
+    this.dashTimer = rand(2.5, 4.5);
+    this.dashDirection = { x: 1, y: 0 };
+    this.dashHits = new Set();
   }
 
   get underground() {
@@ -166,7 +170,70 @@ class Monster {
   }
 
   canBeHit(element) {
-    return !this.underground || element === "grass";
+    if (this.underground) return element === "grass";
+    return this.dashState !== "dashing" || element === "water";
+  }
+
+  finishDash(quenched = false) {
+    this.dashState = "recovery";
+    this.dashTimer = quenched ? 1.4 : 0.9;
+    this.attackCooldown = this.dashTimer;
+    if (quenched) {
+      game.particles.burst(center(this), "#b7edff", 22);
+      game.floaters.push(new Floater(this.x - 15, this.y - 16, "Quenched!", "#b7edff"));
+    }
+  }
+
+  updateDash(dt, target) {
+    if (this.dashState === "ready") {
+      this.dashTimer -= dt;
+      if (this.dashTimer > 0) return false;
+      const from = center(this), to = center(target);
+      const length = Math.hypot(to.x - from.x, to.y - from.y);
+      this.dashDirection = length > 0 ? { x: (to.x - from.x) / length, y: (to.y - from.y) / length } : { x: 1, y: 0 };
+      this.dashState = "windup";
+      this.dashTimer = 0.7;
+      return true;
+    }
+    if (this.dashState === "windup") {
+      this.dashTimer -= dt;
+      if (this.dashTimer <= 0) {
+        this.dashState = "dashing";
+        this.dashTimer = 0.65;
+        this.dashHits.clear();
+        game.particles.burst(center(this), "#f9d76e", 16);
+      }
+      return true;
+    }
+    if (this.dashState === "dashing") {
+      // Short collision steps prevent the fast bird from skipping over a target.
+      const travel = Math.min(dt, this.dashTimer) * 420;
+      const steps = Math.max(1, Math.ceil(travel / 6));
+      for (let i = 0; i < steps; i++) {
+        const nextX = this.x + this.dashDirection.x * travel / steps;
+        const nextY = this.y + this.dashDirection.y * travel / steps;
+        this.x = clamp(nextX, 8, WIDTH - this.w - 8);
+        this.y = clamp(nextY, 58, HEIGHT - this.h - 8);
+        for (const victim of [game.player, ...game.allies]) {
+          if (!victim.dead && !this.dashHits.has(victim) && rectsOverlap(this, victim)) {
+            this.dashHits.add(victim);
+            victim.takeDamage(20, "fire");
+          }
+        }
+        if (nextX !== this.x || nextY !== this.y) { this.finishDash(); break; }
+      }
+      if (this.dashState === "dashing") {
+        this.dashTimer -= dt;
+        if (this.dashTimer <= 0) this.finishDash();
+      }
+      return true;
+    }
+    this.dashTimer -= dt;
+    if (this.dashTimer <= 0) {
+      this.dashState = "ready";
+      this.dashTimer = rand(3, 5);
+    }
+    return true;
   }
 
   updateBurrow(dt, target) {
@@ -244,6 +311,7 @@ class Monster {
     }
 
     if (this.type === "grass" && this.updateBurrow(dt, target)) return;
+    if (this.type === "fire" && this.updateDash(dt, target)) return;
 
     const selfCenter = center(this);
     const d = Math.hypot(targetCenter.x - selfCenter.x, targetCenter.y - selfCenter.y);
@@ -260,6 +328,7 @@ class Monster {
 
   takeDamage(amount, element) {
     if (this.dead || !this.canBeHit(element)) return;
+    if (this.dashState === "dashing" && element === "water") this.finishDash(true);
     const multiplier = strongAgainst(element, this.type) ? 1.6 : 1;
     const finalDamage = Math.round(amount * multiplier);
     this.health -= finalDamage;
@@ -282,6 +351,11 @@ class Monster {
   draw() {
     const x = Math.round(this.x);
     const y = Math.round(this.y);
+    if (this.dashState === "dashing") {
+      drawFireDash(this);
+      return;
+    }
+    if (this.dashState === "windup") drawDashWarning(this);
     if (this.underground) {
       drawBurrow(this);
       return;
@@ -621,7 +695,7 @@ class Game {
   }
 
   tryTame(monster) {
-    if (monster.dead || monster.underground) return;
+    if (monster.dead || !monster.canBeHit("tame")) return;
     if (this.allies.length >= this.tameSlots) {
       this.floaters.push(new Floater(monster.x - 8, monster.y - 8, "No slot", "#f8f0ce"));
       return;
@@ -903,15 +977,24 @@ function drawCreature(x, y, type, time, digging) {
     pixelRect(x + 22, y + bob + 4, 3, 3, '#df9d81');
     if (digging) pixelRect(x - 4, y + 23, 34, 4, '#987144');
   } else if (type === 'fire') {
-    pixelShape(x, y, [[1,21],[-3,10],[3,13],[2,1],[8,5],[13,-10-step],[18,1],[24,-3],[23,10],[29,6],[26,21],[20,25],[7,25]], '#b84332');
-    pixelShape(x, y, [[3,19],[6,6],[10,10],[14,-4-step],[18,9],[23,5],[24,19],[18,23],[8,23]], '#f38537');
-    pixelShape(x, y, [[9,20],[10,12],[14,7],[17,13],[20,20],[16,24]], '#f9d76e');
-    pixelRect(x + 6, y + 12, 5, 3, '#5a2632');
-    pixelRect(x + 17, y + 12, 5, 3, '#5a2632');
-    pixelRect(x + 8, y + 12, 2, 2, '#fff6c4');
-    pixelRect(x + 18, y + 12, 2, 2, '#fff6c4');
-    pixelRect(x + 3, y - 7 - step, 3, 3, '#f8c66a');
-    pixelRect(x + 22, y - 10 + step, 2, 3, '#f38537');
+    // Swept flame-feather wings, hooked beak, crest, and talons.
+    const flap = Math.round(Math.sin(time) * 5);
+    pixelShape(x,y,[[-12,1+flap],[-5,4+flap],[-8,-5+flap],[5,5],[10,16],[-1,18]],'#bd4234');
+    pixelShape(x,y,[[37,1+flap],[30,4+flap],[33,-5+flap],[20,5],[15,16],[26,18]],'#bd4234');
+    pixelShape(x,y,[[-9,3+flap],[3,8],[8,15],[-1,13]],'#ff9a40');
+    pixelShape(x,y,[[34,3+flap],[22,8],[17,15],[26,13]],'#ff9a40');
+    pixelShape(x,y,[[6,15],[19,15],[23,29],[16,24],[12,31],[9,24],[2,29]],'#d84f31');
+    pixelShape(x,y,[[7,4],[12,-7],[16,0],[22,-3],[19,6],[21,17],[16,23],[8,23],[4,16]],'#e76d32');
+    pixelShape(x,y,[[9,8],[16,8],[18,17],[13,23],[8,18]],'#ffd473');
+    pixelRect(x+5,y+5,6,4,'#562637');
+    pixelRect(x+16,y+5,6,4,'#562637');
+    pixelRect(x+8,y+5,3,2,'#fff5c2');
+    pixelRect(x+16,y+5,3,2,'#fff5c2');
+    pixelShape(x,y,[[10,9],[17,9],[13,15]],'#ffec98');
+    pixelRect(x+6,y+23,3,4,'#ebbc66');
+    pixelRect(x+17,y+23,3,4,'#ebbc66');
+    pixelRect(x+4,y+26,7,2,'#ebbc66');
+    pixelRect(x+16,y+26,7,2,'#ebbc66');
   } else {
     pixelShape(x, y + step, [[12,-8],[18,0],[23,5],[27,14],[25,21],[19,25],[5,25],[-1,20],[-2,12],[3,5],[8,1]], '#265a88');
     pixelShape(x, y + step, [[12,-5],[16,2],[22,8],[24,16],[20,22],[6,22],[1,17],[3,9],[9,3]], '#469db9');
@@ -954,4 +1037,33 @@ function drawBurrow(monster) {
     ctx.font = "bold 18px 'Courier New'";
     ctx.fillText('!', x + 8, y - 5);
   }
+}
+
+function drawDashWarning(monster) {
+  const origin = center(monster), direction = monster.dashDirection;
+  const end = {
+    x: clamp(origin.x + direction.x * 273, 8 + monster.w / 2, WIDTH - 8 - monster.w / 2),
+    y: clamp(origin.y + direction.y * 273, 58 + monster.h / 2, HEIGHT - 8 - monster.h / 2),
+  };
+  ctx.strokeStyle = '#ffbb70';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([6, 6]);
+  ctx.beginPath(); ctx.moveTo(origin.x, origin.y); ctx.lineTo(end.x, end.y); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = '#ffe1a1'; ctx.font = "bold 18px 'Courier New'";
+  ctx.fillText('!', monster.x + 9, monster.y - 13);
+}
+
+function drawFireDash(monster) {
+  const origin = center(monster);
+  ctx.save();
+  ctx.translate(Math.round(origin.x), Math.round(origin.y));
+  ctx.rotate(Math.atan2(monster.dashDirection.y, monster.dashDirection.x));
+  const flicker = Math.round(Math.sin(monster.animationTime * 3) * 4);
+  pixelShape(0,0,[[-40-flicker,-8],[-20,-6],[-31,-15],[-7,-12],[11,-10],[17,0],[11,10],[-8,12],[-33,13],[-21,5],[-44+flicker,4]],'#db5730');
+  pixelShape(0,0,[[-28,-5],[-9,-9],[9,-7],[14,0],[8,8],[-9,8],[-30,5],[-17,0]],'#ffac44');
+  pixelShape(0,0,[[-10,-4],[7,-5],[11,0],[6,5],[-13,4],[-5,0]],'#fff2ac');
+  pixelRect(-39, -13 + flicker, 3, 3, '#f2b75c');
+  pixelRect(-48, 8 - flicker, 4, 2, '#e77939');
+  ctx.restore();
 }
