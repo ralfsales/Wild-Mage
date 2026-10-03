@@ -27,9 +27,11 @@ Open `character-creator/index.html` from a local web server or GitHub Pages.
 
 `styles.css` contains the Wildwood creator styling.
 
-`sprites.js` is the shared layered character renderer. Skin, eyes, mouth, features, clothing, hats and held items are still vector placeholders and can be upgraded category by category.
+`sprites.js` is the shared layered character renderer. Skin, mouth, features, clothing, hats and held items are still vector placeholders and can be upgraded category by category.
 
-`hair-sprites.js` is the first production sprite-backed layer. It loads aligned transparent SVG assets from `assets/hair/`, applies the currently selected hair colour, and plugs directly into the same character renderer used by the live preview and thumbnails.
+`hair-sprites.js` loads aligned transparent SVG hair assets from `assets/hair/`, applies the selected hair colour, and replaces only the hair layer.
+
+`eyes-sprites.js` loads aligned SVG eye assets from `assets/eyes/`. Every eye shape has a neutral base sprite plus a separate iris mask, so the selected iris colour can be applied dynamically without duplicating the artwork.
 
 `app.js` owns UI state, randomize/reset/save controls and localStorage persistence.
 
@@ -51,7 +53,20 @@ All hair assets share a `320 × 400` viewBox and are aligned to the same head po
 - `assets/hair/dreads.svg`
 - `assets/hair/black-power.svg`
 
-One neutral sprite is reused for all eight hair colours, so adding or adjusting a colour does not require duplicate image files.
+One neutral sprite is reused for all eight hair colours.
+
+## Eye sprite assets
+
+All eye assets share the same `320 × 400` alignment as the character.
+
+- `assets/eyes/round-base.svg`
+- `assets/eyes/round-iris.svg`
+- `assets/eyes/mid-base.svg`
+- `assets/eyes/mid-iris.svg`
+- `assets/eyes/narrow-base.svg`
+- `assets/eyes/narrow-iris.svg`
+
+The base sprite contains the sclera, outline and brow shape. The iris sprite works as a tint mask for Black, Brown, Blue, Green, Yellow or Pink. Pupils and highlights are composed on top by `eyes-sprites.js`.
 
 ## Integration later
 
