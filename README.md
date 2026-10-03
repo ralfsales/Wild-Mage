@@ -99,3 +99,11 @@ Run combat checks with `node --test tests/combat.test.cjs`. Open `tests/visual-p
 Fire monsters are flame birds with beating wings, a crest, beak, and talons. A 0.7-second dashed-line warning locks the charge direction. The bird then becomes a fireball traveling at 420 pixels/second for up to 0.65 seconds, stopping at the map edge. Step sideways to dodge: the dash does not track you after the warning starts.
 
 During the dash only Water attacks connect. Water deals its normal elemental bonus damage and quenches the dash immediately, leaving the bird exposed for 1.4 seconds. Fire, Grass, and Tame spells pass through it. A dash deals 20 Fire damage at most once per target, then has 0.9 seconds of recovery. Tamed fire birds keep their appearance but use normal ally attacks.
+
+## Mage customization
+
+Begin adventure opens the creator before play. You can also use Customize mage from the welcome screen, header, or pause menu. The order is Skin, Hair, Eyes, Mouth, Hat / Hood, Coat, Boots, then the optional Staff category. Every option is available to everyone; choose an existing color or any color with the color picker.
+
+The existing layered character artwork and standalone character-creator prototype are preserved. Save applies the look and remembers it in this browser when storage is available. Cancel or Escape discards the current edits. Editing during a run keeps it paused and does not reset health, coins, enemies, or allies. Appearance storage does not save the adventure.
+
+Run checks with `node --test tests/combat.test.cjs tests/customization.test.cjs`.

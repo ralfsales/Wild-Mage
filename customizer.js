@@ -100,10 +100,11 @@ function loadMageAppearance() {
     if (!saved) return appearance;
     Object.keys(appearance).forEach(part => {
       if (saved[part]) {
+        if (/^#[0-9a-f]{6}$/i.test(saved[part].customColor)) appearance[part].customColor=saved[part].customColor;
         const maxStyle = MAGE_OPTIONS[part].styles.length - 1;
         const maxColor = MAGE_OPTIONS[part].colors.length - 1;
-        appearance[part].style = Math.max(0, Math.min(maxStyle, Number(saved[part].style) || 0));
-        appearance[part].color = Math.max(0, Math.min(maxColor, Number(saved[part].color) || 0));
+        appearance[part].style = Math.max(0, Math.min(maxStyle, Math.floor(Number(saved[part].style)) || 0));
+        appearance[part].color = Math.max(0, Math.min(maxColor, Math.floor(Number(saved[part].color)) || 0));
       }
     });
     return appearance;
@@ -111,6 +112,7 @@ function loadMageAppearance() {
 }
 let mageAppearance = loadMageAppearance();
 
+function appearanceColor(appearance,part){return appearance[part].customColor || MAGE_OPTIONS[part].colors[appearance[part].color][0];}
 function mageColor(part) { return MAGE_OPTIONS[part].colors[mageAppearance[part].color][0]; }
 function darker(hex, factor=.72) {
   const n=parseInt(hex.slice(1),16), r=(n>>16)&255,g=(n>>8)&255,b=n&255;
@@ -128,10 +130,10 @@ function stroke(g,pts,c,w=1){g.strokeStyle=c;g.lineWidth=w;g.beginPath();pts.for
 function drawEditableMage(g, x, y, facing={x:1,y:0}, time=0, accent="#d9c27c", appearance=mageAppearance, scale=1) {
   g.save(); g.translate(x,y); g.scale(scale,scale);
   const bob=Math.round(Math.abs(Math.sin(time))*1), step=Math.round(Math.sin(time)*1.5);
-  const skin=MAGE_OPTIONS.skin.colors[appearance.skin.color][0], hair=MAGE_OPTIONS.hair.colors[appearance.hair.color][0];
-  const coat=MAGE_OPTIONS.coat.colors[appearance.coat.color][0], hat=MAGE_OPTIONS.hat.colors[appearance.hat.color][0];
-  const boots=MAGE_OPTIONS.boots.colors[appearance.boots.color][0], eye=MAGE_OPTIONS.eyes.colors[appearance.eyes.color][0];
-  const mouth=MAGE_OPTIONS.mouth.colors[appearance.mouth.color][0], wood=MAGE_OPTIONS.staff.colors[appearance.staff.color][0];
+  const skin=appearanceColor(appearance,'skin'), hair=appearanceColor(appearance,'hair');
+  const coat=appearanceColor(appearance,'coat'), hat=appearanceColor(appearance,'hat');
+  const boots=appearanceColor(appearance,'boots'), eye=appearanceColor(appearance,'eyes');
+  const mouth=appearanceColor(appearance,'mouth'), wood=appearanceColor(appearance,'staff');
 
   // Shadow + legs
   ell(g,15,35,18,4,"#0b1713aa");
@@ -222,7 +224,7 @@ function drawCoatLayer(g,style,color,bob){
   if(style===7){poly(g,[[5,14+bob],[17,18+bob],[29,14+bob],[27,19+bob],[17,22+bob],[7,19+bob]],l);}
   rect(g,10,17+bob,2,12,trim);rect(g,23,17+bob,2,12,trim);
   // hands at sleeve ends
-  ell(g,5,23+bob,3,3,MAGE_OPTIONS.skin.colors[mageAppearance.skin.color][0]);ell(g,29,23+bob,3,3,MAGE_OPTIONS.skin.colors[mageAppearance.skin.color][0]);
+  ell(g,5,23+bob,3,3,appearanceColor(mageAppearance,'skin'));ell(g,29,23+bob,3,3,appearanceColor(mageAppearance,'skin'));
 }
 function drawBootLayer(g,style,color,step){
   const d=darker(color,.64),l=lighter(color,20), y=31;
@@ -252,50 +254,51 @@ function drawStaffLayer(g,style,color,accent,facing,time){
 const originalDrawMage = drawMage;
 drawMage = function(x,y,facing,time,gem){ drawEditableMage(ctx,x,y,facing,time,gem,mageAppearance,1); };
 
+
+let openMageCustomizer;
+function mageCustomizerOpen(){return Boolean(document.getElementById('mageCustomizer')?.open);}
 function initMageCustomizer(){
-  const modal=document.getElementById("mageCustomizer"), preview=document.getElementById("magePreview"), pctx=preview.getContext("2d");
-  const tabs=document.getElementById("partTabs"), swatches=document.getElementById("colourSwatches");
-  const label=document.getElementById("currentPartLabel"), styleName=document.getElementById("currentStyleName"), styleHint=document.getElementById("currentStyleHint");
-  const styleCounter=document.getElementById("styleCounter"), colourName=document.getElementById("colourName");
-  let part="hair", previewTime=0, previewFrame=null, resumeAfterClose=false;
-  const partOrder=["hair","staff","hat","eyes","mouth","coat","boots","skin"];
-
-  function buildTabs(){
-    tabs.innerHTML="";
-    partOrder.forEach(key=>{
-      const b=document.createElement("button");b.type="button";b.className="part-tab";b.dataset.part=key;
-      b.innerHTML=`<span>${MAGE_OPTIONS[key].icon}</span>${MAGE_OPTIONS[key].label}`;
-      b.addEventListener("click",()=>{part=key;refreshControls();});tabs.appendChild(b);
-    });
+  const modal=document.getElementById('mageCustomizer'),preview=document.getElementById('magePreview'),pctx=preview.getContext('2d');
+  const tabs=document.getElementById('partTabs'),swatches=document.getElementById('colourSwatches');
+  const partOrder=['skin','hair','eyes','mouth','hat','coat','boots','staff'];
+  let part='skin',frame=null,time=0,before=null,startsGame=false,returnFocus=null;
+  function refresh(){
+    const opt=MAGE_OPTIONS[part],state=mageAppearance[part];
+    tabs.querySelectorAll('button').forEach(b=>{b.classList.toggle('active',b.dataset.part===part);b.setAttribute('aria-pressed',String(b.dataset.part===part));});
+    document.getElementById('currentPartLabel').textContent=opt.label;
+    document.getElementById('currentStyleName').textContent=opt.styles[state.style][1];
+    document.getElementById('currentStyleHint').textContent=opt.styles[state.style][2];
+    document.getElementById('styleCounter').textContent=(state.style+1)+' / '+opt.styles.length;
+    document.getElementById('colourName').textContent=state.customColor?'Custom color':opt.colors[state.color][1];
+    document.getElementById('customMageColor').value=appearanceColor(mageAppearance,part);
+    document.getElementById('customMageColor').setAttribute('aria-label',opt.label+' custom color');
+    swatches.replaceChildren();
+    opt.colors.forEach(([hex,name],i)=>{const b=document.createElement('button');b.type='button';b.className='colour-swatch'+(!state.customColor&&i===state.color?' active':'');b.style.setProperty('--swatch',hex);b.setAttribute('aria-label',name);b.setAttribute('aria-pressed',String(!state.customColor&&i===state.color));b.addEventListener('click',()=>{state.color=i;delete state.customColor;refresh();});swatches.append(b);});
   }
-  function refreshControls(){
-    const opt=MAGE_OPTIONS[part], state=mageAppearance[part], style=opt.styles[state.style];
-    tabs.querySelectorAll(".part-tab").forEach(b=>b.classList.toggle("active",b.dataset.part===part));
-    label.textContent=opt.label;styleName.textContent=style[1];styleHint.textContent=style[2];styleCounter.textContent=`${state.style+1} / ${opt.styles.length}`;
-    colourName.textContent=opt.colors[state.color][1];swatches.innerHTML="";
-    opt.colors.forEach(([hex,name],i)=>{const b=document.createElement("button");b.type="button";b.className="colour-swatch"+(i===state.color?" active":"");b.style.setProperty("--swatch",hex);b.title=name;b.setAttribute("aria-label",name);b.addEventListener("click",()=>{state.color=i;refreshControls();});swatches.appendChild(b);});
+  function render(){time+=.035;pctx.clearRect(0,0,320,380);pctx.imageSmoothingEnabled=false;drawEditableMage(pctx,72,78,{x:1,y:0},time,'#e3c66e',mageAppearance,5.2);frame=requestAnimationFrame(render);}
+  openMageCustomizer=function(start=false){
+    if(game.state==='playing')setPaused(true);
+    startsGame=start;before=JSON.parse(JSON.stringify(mageAppearance));returnFocus=document.activeElement;part='skin';keys.clear();
+    document.getElementById('saveMage').textContent=start?'Save & begin':'Save mage';
+    refresh();modal.showModal();render();tabs.querySelector('button').focus();
+  };
+  function close(save=false){
+    if(save){try{localStorage.setItem(MAGE_STORAGE_KEY,JSON.stringify(mageAppearance));}catch{}}
+    else mageAppearance=before;
+    cancelAnimationFrame(frame);frame=null;modal.close();returnFocus?.focus();
+    if(save&&startsGame)game.start();
   }
-  function renderPreview(){
-    previewTime+=.035;pctx.clearRect(0,0,preview.width,preview.height);pctx.imageSmoothingEnabled=false;
-    const grad=pctx.createRadialGradient(160,150,15,160,165,170);grad.addColorStop(0,"#33584488");grad.addColorStop(1,"#10201900");pctx.fillStyle=grad;pctx.fillRect(0,0,320,380);
-    drawEditableMage(pctx,72,78,{x:1,y:0},previewTime,"#e3c66e",mageAppearance,5.2);
-    previewFrame=requestAnimationFrame(renderPreview);
-  }
-  function openCustomizer(){
-    resumeAfterClose=typeof game!=="undefined"&&game.state==="playing";if(resumeAfterClose) setPaused(true);
-    modal.classList.remove("hidden");refreshControls();if(!previewFrame)renderPreview();document.getElementById("closeCustomizer").focus();
-  }
-  function closeCustomizer(){modal.classList.add("hidden");if(previewFrame){cancelAnimationFrame(previewFrame);previewFrame=null;}if(resumeAfterClose&&game.state==="paused")setPaused(false);}
-  function shiftStyle(delta){const n=MAGE_OPTIONS[part].styles.length;mageAppearance[part].style=(mageAppearance[part].style+delta+n)%n;refreshControls();}
-  function randomize(){partOrder.forEach(k=>{mageAppearance[k].style=Math.floor(Math.random()*MAGE_OPTIONS[k].styles.length);mageAppearance[k].color=Math.floor(Math.random()*MAGE_OPTIONS[k].colors.length);});refreshControls();}
-  function reset(){mageAppearance=cloneDefaultMage();refreshControls();document.getElementById("previewPresetName").textContent="Rafael preset";}
-  function save(){localStorage.setItem(MAGE_STORAGE_KEY,JSON.stringify(mageAppearance));document.getElementById("previewPresetName").textContent="Saved custom mage";const b=document.getElementById("saveMage"),old=b.textContent;b.textContent="Saved ✓";setTimeout(()=>b.textContent=old,1100);}
-
-  buildTabs();refreshControls();
-  document.getElementById("customizeButton").addEventListener("click",openCustomizer);document.getElementById("startCustomizeButton").addEventListener("click",openCustomizer);
-  document.getElementById("closeCustomizer").addEventListener("click",closeCustomizer);document.getElementById("previousStyle").addEventListener("click",()=>shiftStyle(-1));document.getElementById("nextStyle").addEventListener("click",()=>shiftStyle(1));
-  document.getElementById("randomizeMage").addEventListener("click",randomize);document.getElementById("resetMage").addEventListener("click",reset);document.getElementById("saveMage").addEventListener("click",save);
-  modal.addEventListener("click",e=>{if(e.target===modal)closeCustomizer();});document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!modal.classList.contains("hidden")){e.stopImmediatePropagation();closeCustomizer();}} ,true);
+  partOrder.forEach(key=>{const b=document.createElement('button');b.type='button';b.className='part-tab';b.dataset.part=key;b.textContent=MAGE_OPTIONS[key].label;b.addEventListener('click',()=>{part=key;refresh();});tabs.append(b);});
+  function shift(delta){const state=mageAppearance[part];state.style=(state.style+delta+MAGE_OPTIONS[part].styles.length)%MAGE_OPTIONS[part].styles.length;refresh();}
+  document.getElementById('previousStyle').addEventListener('click',()=>shift(-1));
+  document.getElementById('nextStyle').addEventListener('click',()=>shift(1));
+  document.getElementById('customMageColor').addEventListener('input',e=>{mageAppearance[part].customColor=e.target.value;refresh();});
+  ['customizeButton','startCustomizeButton','pauseCustomizeButton'].forEach(id=>document.getElementById(id).addEventListener('click',()=>openMageCustomizer(false)));
+  document.getElementById('closeCustomizer').addEventListener('click',()=>close(false));
+  document.getElementById('saveMage').addEventListener('click',()=>close(true));
+  document.getElementById('randomizeMage').addEventListener('click',()=>{partOrder.forEach(k=>{mageAppearance[k]={style:Math.floor(Math.random()*MAGE_OPTIONS[k].styles.length),color:Math.floor(Math.random()*MAGE_OPTIONS[k].colors.length)};});refresh();});
+  document.getElementById('resetMage').addEventListener('click',()=>{mageAppearance=cloneDefaultMage();refresh();});
+  modal.addEventListener('cancel',e=>{e.preventDefault();close(false);});
+  refresh();
 }
-
-if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",initMageCustomizer); else initMageCustomizer();
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initMageCustomizer);else initMageCustomizer();

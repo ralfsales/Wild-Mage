@@ -32,7 +32,7 @@
         </div>
       </div>
       <div id="pauseScreen" class="overlay hidden">
-        <div class="panel"><div class="sigil" aria-hidden="true">☾</div><p class="eyebrow">TAKE A BREATHER</p><h2>Forest at rest.</h2><p>Your adventure will be here when you return.</p><button id="resumeButton" class="primary-button" type="button">Resume adventure →</button><p class="start-tip">Or press Escape to continue</p></div>
+        <div class="panel"><div class="sigil" aria-hidden="true">☾</div><p class="eyebrow">TAKE A BREATHER</p><h2>Forest at rest.</h2><p>Your adventure will be here when you return.</p><button id="resumeButton" class="primary-button" type="button">Resume adventure →</button><button id="pauseCustomizeButton" type="button">Customize mage</button><p class="start-tip">Or press Escape to continue</p></div>
       </div>
       <div id="gameOverScreen" class="overlay hidden">
         <div class="panel"><p class="eyebrow">EVERY END IS A BEGINNING</p><h2>A spell<br>to remember.</h2><p id="finalScore">Final coins: 0</p><button id="restartButton" class="primary-button" type="button">Try again →</button><p class="start-tip">Press R to begin a new adventure</p></div>
@@ -51,22 +51,22 @@
     <footer class="hint-bar"><span><b>FIELD NOTES</b> Grass (S) hits burrowing bushes. Water (D) stops firebird dashes. Dodge marked attacks.</span><span>Move <kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd> · Pause <kbd>Esc</kbd></span></footer>
   </main>
 
-  <div id="mageCustomizer" class="customizer-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="customizerTitle">
+  <dialog id="mageCustomizer" class="customizer-backdrop" role="dialog" aria-modal="true" aria-labelledby="customizerTitle">
     <section class="customizer-panel">
       <header class="customizer-header">
-        <div><p class="eyebrow">YOUR WILD MAGE</p><h2 id="customizerTitle">Shape your adventurer.</h2><p>Choose a style, then tint it with one of eight colours.</p></div>
-        <button id="closeCustomizer" class="icon-button" type="button" aria-label="Close customizer">×</button>
+        <div><p class="eyebrow">YOUR WILD MAGE</p><h2 id="customizerTitle">Shape your adventurer.</h2><p>Skin first, then features and clothing. Every option is open to everyone.</p></div>
+        <button id="closeCustomizer" class="icon-button" type="button" aria-label="Cancel customization">×</button>
       </header>
 
       <div class="customizer-layout">
         <div class="mage-preview-card">
           <span class="preview-badge">LIVE PREVIEW</span>
           <canvas id="magePreview" width="320" height="380" aria-label="Custom mage preview"></canvas>
-          <div class="preview-name"><strong>Wildwood Mage</strong><small id="previewPresetName">Rafael preset</small></div>
+          <div class="preview-name"><strong>Wildwood Mage</strong><small id="previewPresetName">Custom appearance</small></div>
         </div>
 
         <div class="customizer-controls">
-          <div id="partTabs" class="part-tabs" role="tablist" aria-label="Character parts"></div>
+          <div id="partTabs" class="part-tabs" role="group" aria-label="Character parts"></div>
           <div class="option-panel">
             <div class="option-heading"><div><span class="control-kicker">STYLE</span><strong id="currentPartLabel">Hair</strong></div><span id="styleCounter">1 / 8</span></div>
             <div class="style-picker">
@@ -77,19 +77,19 @@
 
             <div class="colour-section">
               <div class="option-heading"><span class="control-kicker">COLOUR</span><span id="colourName">Dark brown</span></div>
-              <div id="colourSwatches" class="colour-swatches" aria-label="Colour choices"></div>
+              <label class="custom-color-label">Choose any color <input id="customMageColor" type="color" /></label><div id="colourSwatches" class="colour-swatches" aria-label="Colour choices"></div>
             </div>
           </div>
 
           <div class="customizer-actions">
             <button id="randomizeMage" type="button">Randomize ✦</button>
-            <button id="resetMage" type="button">Reset sample</button>
+            <button id="resetMage" type="button">Reset</button>
             <button id="saveMage" class="save-mage" type="button">Save mage →</button>
           </div>
         </div>
       </div>
     </section>
-  </div>
+  </dialog>
 
   <script src="game.js"></script>
   <script src="customizer.js"></script>
