@@ -170,6 +170,7 @@ class Monster {
     this.dashTimer = rand(2.5, 4.5);
     this.dashDirection = { x: 1, y: 0 };
     this.dashHits = new Set();
+    this.rainState="ready";this.rainTimer=6;this.rainTarget=null;
   }
 
   get underground() {
@@ -178,6 +179,7 @@ class Monster {
 
   canBeHit(element, ace = false) {
     if(ace) return true;
+    if(this.rainState==="vanished" || this.rainState==="falling")return false;
     if (this.underground) return element === "grass";
     return this.dashState !== "dashing" || element === "water";
   }
@@ -300,6 +302,31 @@ class Monster {
     return true;
   }
 
+  beginRain(target) {
+    this.rainTarget={...center(target)};this.rainState="vanished";this.rainTimer=.8;
+    game.particles.burst(center(this),"#a7ecff",16);
+  }
+
+  updateRain(dt, allied=false) {
+    this.rainTimer-=dt;
+    if(this.rainState==="ready"){
+      if(this.rainTimer>0)return false;
+      this.beginRain(game.player);return true;
+    }
+    if(this.rainState==="vanished" && this.rainTimer<=0){this.rainState="falling";this.rainTimer=.5;}
+    else if(this.rainState==="falling" && this.rainTimer<=0){
+      const victims=allied?game.monsters:[game.player,...game.allies];
+      for(const victim of victims){
+        if(victim.dead || dist(center(victim),this.rainTarget)>52)continue;
+        if(allied)victim.takeDamage(36,"water");else victim.takeDamage(16,"water");
+      }
+      const p=game.freeSpot(this.rainTarget.x-this.w/2,this.rainTarget.y-this.h/2,this.w,this.h);
+      this.x=p.x;this.y=p.y;this.rainState="recovery";this.rainTimer=1;this.attackCooldown=1;
+      game.particles.burst(this.rainTarget,"#9ce8f5",24);
+    }else if(this.rainState==="recovery" && this.rainTimer<=0){this.rainState="ready";this.rainTimer=rand(5,8);}
+    return true;
+  }
+
   update(dt) {
     if (this.dead) return;
     this.animationTime += dt * 7;
@@ -318,6 +345,7 @@ class Monster {
       }
     }
 
+    if (this.type === "water" && this.updateRain(dt)) return;
     if (this.type === "grass" && this.updateBurrow(dt, target)) return;
     if (this.type === "fire" && this.updateDash(dt, target)) return;
 
@@ -364,6 +392,7 @@ class Monster {
   draw() {
     const x = Math.round(this.x);
     const y = Math.round(this.y);
+    if(this.rainState==="vanished" || this.rainState==="falling"){drawSlimeRain(this);return;}
     if (this.dashState === "dashing") {
       drawFireDash(this);
       return;
@@ -397,8 +426,8 @@ class Ally extends Monster {
     const target = game.monsters.filter(m => !m.dead && m.canBeHit(this.type)).sort((a,b) => dist(this,a)-dist(this,b))[0];
     if (!target || this.dead || this.special) return false;
     if (this.type === "water") {
-      game.areaAttacks.push(new AreaAttack(center(this), "water", 160, 36));
-      this.special = { kind: "rest", time: 0.7 };
+      this.beginRain(target);
+      this.special = { kind: "rain" };
     } else {
       const from = center(this), to = center(target), d = Math.hypot(to.x-from.x,to.y-from.y) || 1;
       this.special = { kind: this.type, time: this.type === "fire" ? 0.65 : 0.9, direction: {x:(to.x-from.x)/d,y:(to.y-from.y)/d}, target, hits: new Set() };
@@ -410,6 +439,7 @@ class Ally extends Monster {
 
   updateSpecial(dt) {
     const s = this.special;
+    if(s.kind==="rain"){this.updateRain(dt,true);if(this.rainState==="ready")this.special=null;return;}
     const duration = Math.min(dt, s.time);
     s.time -= dt;
     if (s.kind === "fire") {
@@ -461,6 +491,7 @@ class Ally extends Monster {
   }
 
   takeDamage(amount, attackerType) {
+    if(this.rainState==="vanished" || this.rainState==="falling")return;
     if (strongAgainst(this.type, attackerType)) {
       game.floaters.push(new Floater(this.x - 8, this.y - 8, "Immune", "#b7edff"));
       return;
@@ -471,6 +502,7 @@ class Ally extends Monster {
 
   draw() {
     super.draw();
+    if(this.rainState==="vanished" || this.rainState==="falling")return;
     ctx.strokeStyle = "#f2dc6d";
     ctx.lineWidth = 2;
     ctx.strokeRect(Math.round(this.x) - 2, Math.round(this.y) - 2, this.w + 4, this.h + 4);
@@ -1183,17 +1215,14 @@ function drawCreature(x, y, type, time, digging) {
     pixelRect(x+4,y+26,7,2,'#ebbc66');
     pixelRect(x+16,y+26,7,2,'#ebbc66');
   } else {
-    pixelShape(x, y + step, [[12,-8],[18,0],[23,5],[27,14],[25,21],[19,25],[5,25],[-1,20],[-2,12],[3,5],[8,1]], '#265a88');
-    pixelShape(x, y + step, [[12,-5],[16,2],[22,8],[24,16],[20,22],[6,22],[1,17],[3,9],[9,3]], '#469db9');
-    pixelRect(x + 5, y + step + 5, 5, 8, '#9ce5e3');
-    pixelRect(x + 9, y + step + 1, 3, 5, '#d5f6e9');
-    pixelRect(x + 5, y + step + 14, 5, 4, '#16384f');
-    pixelRect(x + 16, y + step + 14, 5, 4, '#16384f');
-    pixelRect(x + 6, y + step + 14, 2, 2, '#e5fff0');
-    pixelRect(x + 17, y + step + 14, 2, 2, '#e5fff0');
-    pixelRect(x + 11, y + step + 20, 4, 2, '#a8e5db');
-    pixelRect(x - 4, y + 24, 10, 2, '#6abfc999');
-    pixelRect(x + 20, y + 24, 10, 2, '#6abfc999');
+    // Low, rounded jelly silhouette with squash and stretch, rather than a pointed droplet.
+    const squash=Math.sin(time)*1.5;
+    ctx.save();ctx.translate(x+12,y+24);ctx.scale(1+squash*.025,1-squash*.035);
+    ctx.fillStyle='#17495f';ctx.beginPath();ctx.ellipse(0,-9,17,12,0,Math.PI,Math.PI*2);ctx.quadraticCurveTo(21,3,7,2);ctx.quadraticCurveTo(0,5,-8,2);ctx.quadraticCurveTo(-21,3,-17,-9);ctx.fill();
+    ctx.fillStyle='#52bbd5';ctx.beginPath();ctx.ellipse(0,-9,14,10,0,Math.PI,Math.PI*2);ctx.quadraticCurveTo(17,0,5,0);ctx.quadraticCurveTo(-14,3,-14,-9);ctx.fill();
+    ctx.fillStyle='#b8f5ed';ctx.beginPath();ctx.ellipse(-6,-14,5,2.5,-.4,0,Math.PI*2);ctx.fill();
+    pixelRect(-8,-9,4,5,'#133e55');pixelRect(5,-9,4,5,'#133e55');pixelRect(-7,-9,1,2,'#fff9dc');pixelRect(6,-9,1,2,'#fff9dc');
+    ctx.strokeStyle='#24657a';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,-4,3,0,Math.PI);ctx.stroke();ctx.restore();
   }
 }
 
@@ -1430,4 +1459,24 @@ function drawFirePulse(r,p,t){
     const ember=r+12+(i%5)*5*p;ctx.fillStyle=i%3?'#ffad45':'#ffe4a3';ctx.fillRect(ember,-8+flicker*5,2+i%2,2+i%2);ctx.restore();
   }
   chargeRing(r*.61,2,'#ffbb5845');
+}
+
+function drawSlimeRain(slime){
+  const p=slime.rainTarget;if(!p)return;
+  ctx.save();
+  // Ground ripples indicate the landing area, never the route of the attack.
+  ctx.strokeStyle='#b8eced80';ctx.lineWidth=2;
+  const pulse=slime.rainState==='vanished'?1-slime.rainTimer/.8:1;
+  ctx.beginPath();ctx.ellipse(p.x,p.y,20+pulse*20,9+pulse*8,0,0,Math.PI*2);ctx.stroke();
+  if(slime.rainState==='falling'){
+    const progress=clamp(1-slime.rainTimer/.5,0,1);
+    for(let i=0;i<15;i++){
+      const a=i*2.399,r=8+(i%5)*8,x=p.x+Math.cos(a)*r;
+      const y=p.y+Math.sin(a)*r*.5-(1-progress)*(140+(i%4)*18);
+      ctx.strokeStyle=i%3?'#6fd9f0':'#defcff';ctx.lineWidth=3+i%3;
+      ctx.beginPath();ctx.moveTo(x,y-9-i%4);ctx.lineTo(x,y);ctx.stroke();
+    }
+    ctx.globalAlpha=.8;drawCreature(p.x-12,p.y-23-(1-progress)*160,'water',slime.animationTime,false);
+  }
+  ctx.restore();
 }

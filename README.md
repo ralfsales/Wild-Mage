@@ -119,7 +119,7 @@ Tap and release F, D, S, or A for the normal attack. Hold the key for 0.5 second
 
 A charged action consumes one full energy segment. The meter stores up to three charges. Each defeated enemy has a 10% total chance to drop one bonus item, chosen equally from energy, shield, rare union, attack upgrade, and Ace. Energy orbs give one energy point; collect three orbs to fill one segment. Energy starts empty, never regenerates over time, and is not granted by taming. Orbs remain on the ground when storage is full, until their 10-second field lifetime expires.
 
-Player area attacks have a 170-pixel radius and deal 42 base damage once per enemy. Elemental bonuses and monster immunities still apply. Water waves stop firebird dashes; Grass earthquakes hit underground bushes. Fire allies dash, Grass allies burrow and erupt, and Water allies release a wave. Ally specials target enemies only. An ally command with no ready allies or eligible targets does not spend energy. Pausing or leaving the window cancels pending held inputs.
+Player area attacks have a 170-pixel radius and deal 42 base damage once per enemy. Elemental bonuses and monster immunities still apply. Water waves stop firebird dashes; Grass earthquakes hit underground bushes. Fire allies dash, Grass allies burrow and erupt, and Water allies vanish and rain down on enemies. Ally specials target enemies only. An ally command with no ready allies or eligible targets does not spend energy. Pausing or leaving the window cancels pending held inputs.
 
 ## Level one: the first lesson
 
@@ -132,3 +132,5 @@ Level two keeps coins, energy, and allies, restores health, and continues in the
 All spawned collectibles (coins, bonus items, energy, health potions, and slot charms) vanish after 10 seconds of active gameplay if uncollected. Collection does not change the existing buff durations. Placed treasure chests remain part of the map. Fire birds retain their windup animation and exclamation mark, but no attack trajectory line is drawn. Underground earth movement remains visible.
 
 Charged spell visuals use element-specific canvas effects: water crests with curling foam and spray, branching earthquake fissures with airborne stones and dust, and a flame-front fire pulse with hot cores and embers. Visuals use simulation time and freeze on pause; combat timing and damage are unchanged.
+
+The basic water foe is a rounded, wobbling slime. Every 5–8 seconds (first attack after 6s), it vanishes for 0.8s, then falls as rain for 0.5s onto the mage’s position captured at takeoff. Ground ripples mark the landing area without a trajectory line. Impact deals 16 Water damage once within 52px, then the slime reforms with 1s recovery. Move away to dodge; normal attacks and taming cannot hit it while airborne (Ace bypasses this). Tamed slimes use rain on an enemy instead, dealing 36 base Water damage to nearby foes only.

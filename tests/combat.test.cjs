@@ -133,7 +133,7 @@ test('Ally command costs one charge for the ready team, triggers each special, a
   game.allies=['fire','water','grass'].map(t=>new Ally(new Monster(100,100,t)));
   assert.equal(game.castCharged(),false);assert.equal(game.energy,6);
   const target=new Monster(190,100,'water');game.monsters=[target];assert.equal(game.castCharged(),true);assert.equal(game.energy,3);
-  assert.equal(game.allies[0].special.kind,'fire');assert.equal(game.allies[1].special.kind,'rest');assert.equal(game.allies[2].special.kind,'grass');
+  assert.equal(game.allies[0].special.kind,'fire');assert.equal(game.allies[1].special.kind,'rain');assert.equal(game.allies[2].special.kind,'grass');
   game.player.cooldown=0;assert.equal(game.castCharged(),false);assert.equal(game.energy,3);
   game.allies.forEach(a=>a.update(1));game.areaAttacks.forEach(a=>a.update(.4));assert.equal(game.player.health,120);assert.ok(target.health<80);
   assert.equal(game.allies[0].dashState,'ready');assert.equal(game.allies[2].burrowState,'surface');
@@ -230,4 +230,25 @@ test('collecting before expiry applies the buff for its full duration',()=>{
   const {game,Pickup}=world();const item=new Pickup(50,80,'shield','fire');item.update(9);
   game.player.x=50;game.player.y=80;item.update(.5);assert.equal(item.dead,true);assert.equal(game.buffs.fire,10);
   item.update(20);assert.equal(game.buffs.fire,10);
+});
+
+
+test('water slime vanishes, rains on a fixed mage position, hits once and reforms',()=>{
+  const {game,Monster}=world();const slime=new Monster(100,100,'water');slime.rainTimer=0;
+  slime.update(.01);assert.equal(slime.rainState,'vanished');assert.equal(slime.canBeHit('grass'),false);
+  const target={...slime.rainTarget};slime.update(.81);assert.equal(slime.rainState,'falling');slime.draw();
+  slime.update(.51);assert.equal(game.player.health,104);assert.equal(slime.rainState,'recovery');slime.update(.1);assert.equal(game.player.health,104);
+  slime.update(1);assert.equal(slime.rainState,'ready');assert.equal(slime.canBeHit('tame'),true);
+});
+test('rain can be dodged, freezes on pause, and dead slimes cannot land attacks',()=>{
+  const {game,Monster}=world();const slime=new Monster(100,100,'water');game.monsters=[slime];slime.rainTimer=0;slime.update(.01);
+  const x=slime.rainTarget.x;game.player.x=50;game.player.y=80;game.state='paused';game.update(2);assert.equal(slime.rainTimer,.8);
+  game.state='playing';slime.update(.81);slime.update(.51);assert.equal(game.player.health,120);assert.equal(slime.rainTarget.x,x);
+  slime.beginRain(game.player);slime.dead=true;slime.update(2);assert.equal(game.player.health,120);
+});
+test('tamed slime rain attacks enemies and never the mage or other allies',()=>{
+  const {game,Monster,Ally}=world();const enemy=new Monster(game.player.x,game.player.y,'fire');game.monsters=[enemy];
+  const ally=new Ally(new Monster(100,100,'water'));game.allies=[ally];assert.equal(ally.useSpecial(),true);
+  ally.update(.81);ally.update(.51);assert.ok(enemy.health<80);assert.equal(game.player.health,120);assert.equal(ally.health,80);
+  ally.update(1.01);assert.equal(ally.special,null);
 });
