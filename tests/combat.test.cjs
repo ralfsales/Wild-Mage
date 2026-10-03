@@ -252,3 +252,17 @@ test('tamed slime rain attacks enemies and never the mage or other allies',()=>{
   ally.update(.81);ally.update(.51);assert.ok(enemy.health<80);assert.equal(game.player.health,120);assert.equal(ally.health,80);
   ally.update(1.01);assert.equal(ally.special,null);
 });
+
+
+test('attack upgrades persist through time, other items, pauses and levels until replaced or death',()=>{
+  const {game,Pickup,setRandom}=world();setRandom(0);
+  const equip=()=>new Pickup(game.player.x,game.player.y,'upgrade').update(0);
+  equip();game.spawnTimer=999;game.potionTimer=999;game.slotSpawnTimer=999;game.update(30);
+  assert.equal(game.buffs.upgrade,1);assert.equal(game.upgradeMode,'spread');
+  new Pickup(game.player.x,game.player.y,'shield','fire').update(0);assert.equal(game.upgradeMode,'spread');assert.equal(game.buffs.upgrade,1);
+  game.state='paused';game.update(30);assert.equal(game.buffs.upgrade,1);
+  game.state='levelcomplete';game.nextLevel();assert.equal(game.buffs.upgrade,1);
+  setRandom(.9);equip();assert.equal(game.upgradeMode,'blast');assert.equal(game.buffs.upgrade,1);
+  game.end();assert.equal(game.buffs.upgrade,0);equip();assert.equal(game.buffs.upgrade,0);
+  game.start();assert.equal(game.buffs.upgrade,0);
+});

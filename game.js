@@ -762,6 +762,8 @@ class Game {
 
   end() {
     this.state = "gameover";
+    this.buffs.upgrade=0;
+    this.updateLesson();
     clearInput();
     pauseButton.disabled = true;
     finalScore.textContent = `Final coins: ${this.player.coins}`;
@@ -804,7 +806,7 @@ class Game {
       ? "LEVEL 1 · Survive "+Math.min(60,Math.floor(this.elapsed))+" / 60s · Befriend "+marks
       : "LEVEL 2 · The deeper wildwood · "+Math.floor(this.elapsed)+"s survived";
     const progress=document.getElementById("lessonProgress");if(progress.textContent!==lesson)progress.textContent=lesson;
-    const active=Object.entries(this.buffs).filter(([,t])=>t>0).map(([k,t])=>(k==="upgrade"?this.upgradeMode+" shots":k==="ace"?"Ace":k+" shield")+" "+Math.ceil(t)+"s");
+    const active=Object.entries(this.buffs).filter(([,t])=>t>0).map(([k,t])=>k==="upgrade"?this.upgradeMode+" shots · until replaced or defeated":(k==="ace"?"Ace":k+" shield")+" "+Math.ceil(t)+"s");
     const summons=this.allies.filter(a=>!a.dead&&a.summonLife!==undefined);
     if(summons.length)active.push("Union: "+summons.length+" helpers · "+Math.ceil(Math.max(...summons.map(a=>a.summonLife)))+"s");
     const buffText=active.join(" · ") || "Walk over drops to collect them. Red bottles restore 35 health.";
@@ -886,7 +888,7 @@ class Game {
   update(dt) {
     if (this.state !== "playing") return;
     this.elapsed+=dt;
-    for(const k of Object.keys(this.buffs))this.buffs[k]=Math.max(0,this.buffs[k]-dt);
+    for(const k of Object.keys(this.buffs))if(k!=="upgrade")this.buffs[k]=Math.max(0,this.buffs[k]-dt);
     this.potionTimer-=dt;
     if(this.potionTimer<=0){if(this.pickups.filter(p=>p.kind==="health").length<3){const p=this.freeSpot();this.pickups.push(new Pickup(p.x,p.y,"health"));}this.potionTimer=rand(12,20);}
     this.player.update(dt);
@@ -1374,14 +1376,14 @@ function walkToward(actor,target,step){
 class Pickup {
   constructor(x,y,kind,type){Object.assign(this,{x,y,kind,type,w:18,h:18,dead:false,age:0});}
   update(dt){
-    if(expirePickup(this,dt)||!rectsOverlap(this,game.player))return;
+    if(game.state!=="playing" || expirePickup(this,dt)||!rectsOverlap(this,game.player))return;
     if(this.kind==="health" && game.player.health===game.player.maxHealth)return;
     this.dead=true;
     let label="";
     if(this.kind==="shield"){game.buffs[this.type]=10;label=this.type+" shield · 10s";}
     if(this.kind==="ace"){game.buffs.ace=8;label="Ace · 8s";}
     if(this.kind==="health"){game.player.health=Math.min(game.player.maxHealth,game.player.health+35);label="+35 health";}
-    if(this.kind==="upgrade"){game.buffs.upgrade=20;game.upgradeMode=Math.random()<.5?"spread":"blast";label=game.upgradeMode+" shots · 20s";}
+    if(this.kind==="upgrade"){game.buffs.upgrade=1;game.upgradeMode=Math.random()<.5?"spread":"blast";label=game.upgradeMode+" shots equipped";}
     if(this.kind==="union"){
       for(let i=0;i<5;i++){const p=game.freeSpot(this.x+Math.cos(i*Math.PI*2/5)*40,this.y+Math.sin(i*Math.PI*2/5)*40);const ally=new Ally(new Monster(p.x,p.y,this.type));ally.summonLife=15;game.allies.push(ally);}
       label=this.type+" union · 15s";
