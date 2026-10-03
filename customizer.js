@@ -143,13 +143,14 @@ function drawEditableMage(g, x, y, facing={x:1,y:0}, time=0, accent="#d9c27c", a
   // belt and pouch
   rect(g,7,22+bob,21,3,"#6d4a2c"); rect(g,15,21+bob,5,5,"#b78a50"); rect(g,16,22+bob,3,3,"#52351f");
   rect(g,24,24+bob,6,8,"#684429"); rect(g,25,25+bob,4,2,"#9c6d3d");
+  // Draw the hood behind the face so eye, mouth, and hair choices stay visible.
+  drawHatLayer(g,appearance.hat.style,hat,bob);
   // neck + face
   rect(g,13,10+bob,8,6,darker(skin,.88));
   drawFaceLayer(g,appearance.skin.style,skin,bob);
   drawEyesLayer(g,appearance.eyes.style,eye,bob);
   drawMouthLayer(g,appearance.mouth.style,mouth,bob);
   drawHairLayer(g,appearance.hair.style,hair,bob);
-  drawHatLayer(g,appearance.hat.style,hat,bob);
   // cloak clasp
   ell(g,17,14+bob,2.5,2.5,"#c2a05f"); ell(g,17,14+bob,1.2,1.2,"#6e5633");
   drawStaffLayer(g,appearance.staff.style,wood,accent,facing,time);
@@ -302,3 +303,4 @@ function initMageCustomizer(){
   refresh();
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initMageCustomizer);else initMageCustomizer();
+
