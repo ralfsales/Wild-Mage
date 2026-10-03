@@ -83,3 +83,13 @@ Wild-Mage/
 - Sound starts muted and has an explicitly labeled toggle.
 - Visible focus indicators and focus return to the game field support keyboard navigation.
 - Movement requires a keyboard; touch movement is not implemented.
+
+## Creature visuals and grass ambush
+
+The mage wears a violet cloak and pointed hat and carries a staff whose crystal matches the selected spell. Fire spirits have animated flames, water creatures have a droplet silhouette, and grass monsters are walking bushes with root feet and leafy faces. Tamed allies retain their element's appearance.
+
+Wild grass monsters periodically dig down and pursue their target underground, leaving moving earth, cracks, and a fading dirt trail. Only Grass attacks can hit them underground; Fire, Water, and Tame spells pass over them. Grass allies can also damage burrowers. Taming becomes available again after they emerge.
+
+A gold circle warns of the eruption for 0.75 seconds. The bush stops moving during this warning, then deals 14 Grass damage within the marked area and rests above ground for 1.1 seconds. Move out of the circle or defeat it with Grass before it erupts. Tamed bushes stay above ground.
+
+Run combat checks with `node --test tests/combat.test.cjs`. Open `tests/visual-preview.html` through a local web server to inspect the character artwork and burrowing states.

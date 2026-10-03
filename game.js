@@ -110,6 +110,7 @@ class Player {
     if (keys.has("arrowleft")) dx -= 1;
     if (keys.has("arrowright")) dx += 1;
     if (dx || dy) {
+      this.walkTime = (this.walkTime || 0) + dt * 10;
       const length = Math.hypot(dx, dy);
       dx /= length;
       dy /= length;
@@ -136,20 +137,7 @@ class Player {
     if (blink) return;
     const x = Math.round(this.x);
     const y = Math.round(this.y);
-    ctx.fillStyle = "#20203a";
-    ctx.fillRect(x + 4, y + 11, 16, 15);
-    ctx.fillStyle = "#5b3ad6";
-    ctx.fillRect(x + 2, y + 8, 20, 16);
-    ctx.fillStyle = "#d8c6ff";
-    ctx.fillRect(x + 7, y + 5, 10, 9);
-    ctx.fillStyle = "#2d195d";
-    ctx.fillRect(x + 4, y, 16, 7);
-    ctx.fillRect(x + 7, y - 5, 10, 8);
-    ctx.fillStyle = "#ffd45c";
-    ctx.fillRect(x + 11, y - 8, 3, 5);
-    ctx.fillStyle = "#321b17";
-    ctx.fillRect(x + 7, y + 25, 5, 3);
-    ctx.fillRect(x + 14, y + 25, 5, 3);
+    drawMage(x, y, this.facing, this.walkTime || 0, ELEMENT_COLORS[SKILLS[this.selectedSkill].element]);
   }
 }
 
@@ -167,9 +155,81 @@ class Monster {
     this.attackCooldown = rand(0.1, 0.8);
     this.dead = false;
     this.spawnGlow = 0.5;
+    this.animationTime = rand(0, 6);
+    this.burrowState = "surface";
+    this.burrowTimer = rand(3, 5);
+    this.trail = [];
+  }
+
+  get underground() {
+    return this.burrowState === "underground" || this.burrowState === "warning";
+  }
+
+  canBeHit(element) {
+    return !this.underground || element === "grass";
+  }
+
+  updateBurrow(dt, target) {
+    this.burrowTimer -= dt;
+    if (this.burrowState === "surface") {
+      if (this.burrowTimer <= 0) {
+        this.burrowState = "digging";
+        this.burrowTimer = 0.55;
+        game.particles.burst(center(this), "#aa8250", 10);
+      }
+      return false;
+    }
+    if (this.burrowState === "digging") {
+      if (this.burrowTimer <= 0) {
+        this.burrowState = "underground";
+        this.burrowTimer = 3;
+        this.trail = [];
+      }
+      return true;
+    }
+    if (this.burrowState === "underground") {
+      const from = center(this), to = center(target);
+      const distance = Math.hypot(to.x - from.x, to.y - from.y);
+      if (distance < 22 || this.burrowTimer <= 0) {
+        this.burrowState = "warning";
+        this.burrowTimer = 0.75;
+      } else {
+        const step = Math.min(distance, 100 * dt);
+        this.x = clamp(this.x + (to.x - from.x) / distance * step, 8, WIDTH - this.w - 8);
+        this.y = clamp(this.y + (to.y - from.y) / distance * step, 58, HEIGHT - this.h - 8);
+        const last = this.trail[this.trail.length - 1];
+        if (!last || Math.hypot(this.x - last.x, this.y - last.y) >= 7) {
+          this.trail.push({ x: this.x, y: this.y, life: 0.65 });
+        }
+      }
+      return true;
+    }
+    if (this.burrowState === "warning") {
+      if (this.burrowTimer <= 0) {
+        this.burrowState = "recovery";
+        this.burrowTimer = 1.1;
+        this.attackCooldown = 1.1;
+        game.particles.burst(center(this), "#aa8250", 24);
+        game.particles.burst(center(this), "#a9ce65", 16);
+        game.floaters.push(new Floater(this.x - 12, this.y - 18, "Ambush!", "#e4c77d"));
+        for (const victim of [game.player, ...game.allies]) {
+          if (!victim.dead && dist(center(this), center(victim)) < 44) victim.takeDamage(14, "grass");
+        }
+      }
+      return true;
+    }
+    if (this.burrowTimer <= 0) {
+      this.burrowState = "surface";
+      this.burrowTimer = rand(4, 6);
+    }
+    return true;
   }
 
   update(dt) {
+    if (this.dead) return;
+    this.animationTime += dt * 7;
+    this.trail.forEach(point => point.life -= dt);
+    this.trail = this.trail.filter(point => point.life > 0);
     this.spawnGlow = Math.max(0, this.spawnGlow - dt);
     this.attackCooldown = Math.max(0, this.attackCooldown - dt);
     const playerCenter = center(game.player);
@@ -182,6 +242,8 @@ class Monster {
         targetCenter = center(ally);
       }
     }
+
+    if (this.type === "grass" && this.updateBurrow(dt, target)) return;
 
     const selfCenter = center(this);
     const d = Math.hypot(targetCenter.x - selfCenter.x, targetCenter.y - selfCenter.y);
@@ -197,6 +259,7 @@ class Monster {
   }
 
   takeDamage(amount, element) {
+    if (this.dead || !this.canBeHit(element)) return;
     const multiplier = strongAgainst(element, this.type) ? 1.6 : 1;
     const finalDamage = Math.round(amount * multiplier);
     this.health -= finalDamage;
@@ -206,6 +269,7 @@ class Monster {
   }
 
   defeat() {
+    if (this.dead) return;
     this.dead = true;
     const count = Math.floor(rand(2, 5));
     for (let i = 0; i < count; i++) {
@@ -218,26 +282,11 @@ class Monster {
   draw() {
     const x = Math.round(this.x);
     const y = Math.round(this.y);
-    ctx.fillStyle = ELEMENT_COLORS[this.type];
-    ctx.fillRect(x + 4, y + 6, 18, 13);
-    ctx.fillRect(x + 7, y + 2, 12, 5);
-    ctx.fillStyle = "#221318";
-    ctx.fillRect(x + 8, y + 9, 4, 4);
-    ctx.fillRect(x + 16, y + 9, 4, 4);
-    ctx.fillRect(x + 5, y + 19, 5, 4);
-    ctx.fillRect(x + 16, y + 19, 5, 4);
-    if (this.type === "fire") {
-      ctx.fillStyle = "#fff176";
-      ctx.fillRect(x + 11, y - 2, 5, 5);
+    if (this.underground) {
+      drawBurrow(this);
+      return;
     }
-    if (this.type === "water") {
-      ctx.fillStyle = "#b7edff";
-      ctx.fillRect(x + 3, y + 4, 4, 8);
-    }
-    if (this.type === "grass") {
-      ctx.fillStyle = "#285e2e";
-      ctx.fillRect(x + 10, y - 3, 8, 5);
-    }
+    drawCreature(x, y, this.type, this.animationTime, this.burrowState === "digging");
     drawHealthBar(this, "#ff5252");
     if (this.spawnGlow > 0) {
       ctx.strokeStyle = "#f6e58d";
@@ -257,9 +306,10 @@ class Ally extends Monster {
   }
 
   update(dt) {
+    this.animationTime += dt * 7;
     this.attackCooldown = Math.max(0, this.attackCooldown - dt);
     const target = game.monsters
-      .filter((monster) => !monster.dead)
+      .filter((monster) => !monster.dead && monster.canBeHit(this.type))
       .sort((a, b) => dist(this, a) - dist(this, b))[0];
 
     let destination = center(game.player);
@@ -318,7 +368,7 @@ class Spell {
     if (this.life <= 0 || this.x < 0 || this.x > WIDTH || this.y < 0 || this.y > HEIGHT) this.dead = true;
 
     for (const monster of game.monsters) {
-      if (monster.dead || Math.hypot(this.x - center(monster).x, this.y - center(monster).y) > this.r + 14) continue;
+      if (monster.dead || !monster.canBeHit(this.skill.element) || Math.hypot(this.x - center(monster).x, this.y - center(monster).y) > this.r + 14) continue;
       if (this.skill.element === "tame") game.tryTame(monster);
       else monster.takeDamage(this.skill.damage, this.skill.element);
       this.dead = true;
@@ -571,6 +621,7 @@ class Game {
   }
 
   tryTame(monster) {
+    if (monster.dead || monster.underground) return;
     if (this.allies.length >= this.tameSlots) {
       this.floaters.push(new Floater(monster.x - 8, monster.y - 8, "No slot", "#f8f0ce"));
       return;
@@ -785,3 +836,122 @@ document.addEventListener("visibilitychange", () => {
 
 game = new Game();
 requestAnimationFrame(loop);
+// Code-drawn pixel silhouettes keep the game self-contained and crisp at any scale.
+function pixelRect(x, y, w, h, color) {
+  ctx.fillStyle = color;
+  ctx.fillRect(Math.round(x), Math.round(y), w, h);
+}
+
+function pixelShape(x, y, points, color) {
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  points.forEach(([px, py], i) => i ? ctx.lineTo(x + px, y + py) : ctx.moveTo(x + px, y + py));
+  ctx.closePath();
+  ctx.fill();
+}
+
+function drawMage(x, y, facing, time, gem) {
+  const step = Math.round(Math.sin(time) * 2);
+  pixelRect(x + 1, y + 26, 26, 4, '#10221ca0');
+  pixelRect(x + 5, y + 23 + step, 6, 6, '#231e31');
+  pixelRect(x + 15, y + 23 - step, 6, 6, '#231e31');
+  pixelShape(x, y, [[5,9],[20,9],[25,25],[0,25]], '#33274f');
+  pixelShape(x, y, [[9,10],[19,10],[21,24],[5,24]], '#6652a0');
+  pixelRect(x + 9, y + 12, 3, 12, '#a18bcc');
+  pixelRect(x + 5, y + 21, 16, 2, '#d6b96f');
+  pixelRect(x + 8, y + 4, 12, 8, '#dbb899');
+  pixelRect(x + (facing.x < 0 ? 9 : 15), y + 7, 3, 2, '#2b2541');
+  pixelRect(x + 6, y + 1, 16, 4, '#30263f');
+  pixelShape(x, y, [[-3,3],[3,-1],[8,-14],[15,-18],[19,-13],[15,-12],[21,-1],[27,3]], '#362852');
+  pixelShape(x, y, [[6,-2],[10,-13],[15,-16],[13,-10],[17,-2]], '#7b63b0');
+  pixelRect(x + 4, y - 2, 18, 3, '#c8a766');
+  pixelRect(x + 13, y - 2, 3, 3, gem);
+  const staffX = x + (facing.x < 0 ? -5 : 28);
+  pixelRect(staffX, y + 4, 3, 25, '#54392f');
+  pixelRect(staffX, y + 5, 1, 22, '#b58b59');
+  pixelRect(staffX - 3, y, 9, 7, '#d5b67a');
+  pixelShape(staffX, y, [[1,-7],[5,-2],[1,3],[-3,-2]], gem);
+  pixelRect(staffX, y - 4, 2, 3, '#fff4d9');
+  pixelRect(staffX - 1, y + 12, 5, 4, '#dbb899');
+}
+
+function drawCreature(x, y, type, time, digging) {
+  const step = Math.round(Math.sin(time) * 2);
+  pixelRect(x, y + 22, 27, 4, '#10221c99');
+  if (type === 'grass') {
+    // Root feet and branch arms give the bush a walking silhouette.
+    pixelRect(x + 5, y + 17 + step, 5, 9, '#7d5938');
+    pixelRect(x + 2, y + 24 + step, 9, 3, '#ba8a50');
+    pixelRect(x + 17, y + 17 - step, 5, 9, '#7d5938');
+    pixelRect(x + 17, y + 24 - step, 9, 3, '#ba8a50');
+    pixelRect(x - 4, y + 11 - step, 7, 4, '#84623b');
+    pixelRect(x + 24, y + 9 + step, 7, 4, '#84623b');
+    const bob = digging ? 5 + step : step;
+    pixelShape(x, y + bob, [[-5,7],[0,2],[0,-3],[8,-3],[12,-8],[20,-5],[22,0],[28,2],[31,11],[25,20],[2,20],[-4,15]], '#204c2e');
+    pixelRect(x - 1, y + bob + 1, 25, 15, '#397f3d');
+    pixelRect(x + 4, y + bob - 4, 13, 9, '#589f45');
+    pixelRect(x - 3, y + bob + 6, 9, 7, '#66ad4b');
+    pixelRect(x + 18, y + bob + 1, 9, 8, '#4a903e');
+    pixelRect(x + 8, y + bob - 4, 6, 3, '#98c962');
+    pixelRect(x + 20, y + bob + 10, 6, 3, '#75b44c');
+    pixelRect(x + 5, y + bob + 8, 6, 5, '#182f24');
+    pixelRect(x + 16, y + bob + 8, 6, 5, '#182f24');
+    pixelRect(x + 7, y + bob + 9, 3, 2, '#e6eaa0');
+    pixelRect(x + 17, y + bob + 9, 3, 2, '#e6eaa0');
+    pixelRect(x + 11, y + bob + 15, 5, 2, '#182f24');
+    pixelRect(x + 2, y + bob + 2, 3, 3, '#df9d81');
+    pixelRect(x + 22, y + bob + 4, 3, 3, '#df9d81');
+    if (digging) pixelRect(x - 4, y + 23, 34, 4, '#987144');
+  } else if (type === 'fire') {
+    pixelShape(x, y, [[1,21],[-3,10],[3,13],[2,1],[8,5],[13,-10-step],[18,1],[24,-3],[23,10],[29,6],[26,21],[20,25],[7,25]], '#b84332');
+    pixelShape(x, y, [[3,19],[6,6],[10,10],[14,-4-step],[18,9],[23,5],[24,19],[18,23],[8,23]], '#f38537');
+    pixelShape(x, y, [[9,20],[10,12],[14,7],[17,13],[20,20],[16,24]], '#f9d76e');
+    pixelRect(x + 6, y + 12, 5, 3, '#5a2632');
+    pixelRect(x + 17, y + 12, 5, 3, '#5a2632');
+    pixelRect(x + 8, y + 12, 2, 2, '#fff6c4');
+    pixelRect(x + 18, y + 12, 2, 2, '#fff6c4');
+    pixelRect(x + 3, y - 7 - step, 3, 3, '#f8c66a');
+    pixelRect(x + 22, y - 10 + step, 2, 3, '#f38537');
+  } else {
+    pixelShape(x, y + step, [[12,-8],[18,0],[23,5],[27,14],[25,21],[19,25],[5,25],[-1,20],[-2,12],[3,5],[8,1]], '#265a88');
+    pixelShape(x, y + step, [[12,-5],[16,2],[22,8],[24,16],[20,22],[6,22],[1,17],[3,9],[9,3]], '#469db9');
+    pixelRect(x + 5, y + step + 5, 5, 8, '#9ce5e3');
+    pixelRect(x + 9, y + step + 1, 3, 5, '#d5f6e9');
+    pixelRect(x + 5, y + step + 14, 5, 4, '#16384f');
+    pixelRect(x + 16, y + step + 14, 5, 4, '#16384f');
+    pixelRect(x + 6, y + step + 14, 2, 2, '#e5fff0');
+    pixelRect(x + 17, y + step + 14, 2, 2, '#e5fff0');
+    pixelRect(x + 11, y + step + 20, 4, 2, '#a8e5db');
+    pixelRect(x - 4, y + 24, 10, 2, '#6abfc999');
+    pixelRect(x + 20, y + 24, 10, 2, '#6abfc999');
+  }
+}
+
+function drawBurrow(monster) {
+  for (const point of monster.trail) {
+    ctx.globalAlpha = Math.max(0, point.life / 0.65) * 0.65;
+    pixelRect(point.x + 3, point.y + 15, 21, 6, '#59472e');
+    pixelRect(point.x + 7, point.y + 12, 13, 4, '#a68551');
+  }
+  ctx.globalAlpha = 1;
+  const x = Math.round(monster.x), y = Math.round(monster.y);
+  const shake = Math.round(Math.sin(monster.animationTime * 3) * 2);
+  pixelShape(x, y, [[-5,22],[1,15],[5,15],[7,9+shake],[18,8+shake],[23,14],[27,16],[31,23]], '#57442e');
+  pixelRect(x + 2, y + 15 + shake, 23, 5, '#967147');
+  pixelRect(x + 7, y + 10 + shake, 13, 5, '#bd975d');
+  pixelRect(x + 10, y + 9 + shake, 6, 2, '#c8af75');
+  pixelRect(x + 13, y + 14, 3, 6, '#483a2c');
+  pixelRect(x + 16, y + 19, 7, 2, '#483a2c');
+  pixelRect(x - 4, y + 10 - shake, 3, 3, '#b48a51');
+  pixelRect(x + 29, y + 15 + shake, 3, 3, '#b48a51');
+  if (monster.burrowState === 'warning') {
+    ctx.strokeStyle = '#edcc7c';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(x + monster.w / 2, y + monster.h / 2, 44, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = '#edcc7c';
+    ctx.font = "bold 18px 'Courier New'";
+    ctx.fillText('!', x + 8, y - 5);
+  }
+}
