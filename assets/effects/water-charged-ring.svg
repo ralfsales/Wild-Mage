@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="5" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)">
+    <circle cx="256" cy="256" r="184" stroke="#063aa8" stroke-width="56"/>
+    <circle cx="256" cy="256" r="184" stroke="#00a9f4" stroke-width="40"/>
+    <circle cx="256" cy="256" r="184" stroke="#62e8ff" stroke-width="20"/>
+    <circle cx="256" cy="256" r="184" stroke="#e9fbff" stroke-width="7" stroke-dasharray="52 28 18 34"/>
+  </g>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M88 275 C116 238 135 226 165 226 C147 245 145 263 159 280 C177 300 207 298 226 278" stroke="#eefeff" stroke-width="18"/>
+    <path d="M286 84 C318 104 334 127 333 158 C317 139 297 135 278 146 C254 161 253 193 269 216" stroke="#eefeff" stroke-width="18"/>
+    <path d="M424 242 C397 213 372 205 346 212 C365 226 371 247 363 267 C352 294 320 302 294 291" stroke="#eefeff" stroke-width="18"/>
+    <path d="M232 426 C202 407 186 383 188 353 C202 371 223 378 243 368 C268 356 273 325 260 301" stroke="#eefeff" stroke-width="18"/>
+
+    <path d="M92 272 C122 246 145 242 171 249" stroke="#37dfff" stroke-width="9"/>
+    <path d="M290 90 C311 118 315 141 306 164" stroke="#37dfff" stroke-width="9"/>
+    <path d="M420 246 C392 226 370 225 349 237" stroke="#37dfff" stroke-width="9"/>
+    <path d="M228 421 C210 394 210 372 223 351" stroke="#37dfff" stroke-width="9"/>
+  </g>
+  <g fill="#8cf4ff" stroke="#0b78d2" stroke-width="5">
+    <ellipse cx="107" cy="142" rx="12" ry="21" transform="rotate(35 107 142)"/>
+    <ellipse cx="171" cy="78" rx="9" ry="16" transform="rotate(12 171 78)"/>
+    <ellipse cx="387" cy="113" rx="11" ry="20" transform="rotate(-38 387 113)"/>
+    <ellipse cx="438" cy="340" rx="10" ry="19" transform="rotate(38 438 340)"/>
+    <ellipse cx="351" cy="433" rx="9" ry="16" transform="rotate(18 351 433)"/>
+    <ellipse cx="126" cy="385" rx="11" ry="20" transform="rotate(-42 126 385)"/>
+  </g>
+  <g fill="#ffffff">
+    <rect x="112" y="199" width="8" height="8" transform="rotate(45 116 203)"/>
+    <rect x="207" y="86" width="8" height="8" transform="rotate(45 211 90)"/>
+    <rect x="397" y="194" width="9" height="9" transform="rotate(45 401.5 198.5)"/>
+    <rect x="400" y="316" width="8" height="8" transform="rotate(45 404 320)"/>
+    <rect x="281" y="421" width="9" height="9" transform="rotate(45 285.5 425.5)"/>
+    <rect x="105" y="322" width="8" height="8" transform="rotate(45 109 326)"/>
+  </g>
+</svg>
