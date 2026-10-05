@@ -12,16 +12,22 @@
     }
 
     if (element === "tame") {
-      const ready = this.allies.filter(
-        ally => !ally.dead && !ally.special && this.monsters.some(m => !m.dead && m.canBeHit(ally.type))
-      );
+      const ready = this.allies.filter(ally => !ally.dead);
 
       if (!ready.length) {
-        this.floaters.push(new Floater(this.player.x - 30, this.player.y - 20, "No allies ready / no targets", "#bbabed"));
+        this.floaters.push(new Floater(this.player.x - 30, this.player.y - 20, "No tamed allies ready", "#bbabed"));
         return false;
       }
 
-      ready.forEach(ally => ally.useSpecial());
+      // Charged Tame commands every living ally to cast the same charged
+      // elemental attack the wizard would cast for that ally's element:
+      // fire pulse, water wave, or grass earthquake.
+      ready.forEach(ally => {
+        const pulse = new AreaAttack(center(ally), ally.type, 170, 42);
+        pulse.ace = this.buffs.ace > 0;
+        this.areaAttacks.push(pulse);
+        this.particles.burst(center(ally), ELEMENT_COLORS[ally.type] || "#cfb2ff", 16);
+      });
     } else {
       const pulse = new AreaAttack(center(this.player), element, 170, 42);
       pulse.ace = this.buffs.ace > 0;
