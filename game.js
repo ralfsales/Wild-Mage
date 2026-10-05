@@ -488,7 +488,8 @@ class Ally extends Monster {
 
     const selfCenter = center(this);
     const d = Math.hypot(destination.x - selfCenter.x, destination.y - selfCenter.y);
-    if (d > 38) {
+    const pursuing = target && dist(this, target) < 210;
+    if (pursuing ? !rectsOverlap(this, target) : d > 38) {
       walkToward(this, destination, this.speed * dt);
     }
 
@@ -913,7 +914,10 @@ class Game {
     }
 
     for (const group of [this.monsters, this.allies, this.spells, this.coins, this.treasures, this.tameSlotItems, this.energyDrops, this.pickups, this.areaAttacks, this.floaters]) {
-      for (const item of group) item.update(dt);
+      for (const item of group) {
+        item.update(dt);
+        if (this.state !== "playing") return;
+      }
     }
     this.particles.update(dt);
 

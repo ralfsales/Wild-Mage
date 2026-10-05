@@ -27,7 +27,7 @@
     if (this.dead || !this.canBeHit(element, ace)) return;
     if (this.dashState === 'dashing' && element === 'water') this.finishDash(true);
 
-    const multiplier = ace ? ACE_ATTACK_MULTIPLIER : (strongAgainst(element, this.type) ? 1.6 : 1);
+    const multiplier = (strongAgainst(element, this.type) ? 1.6 : 1) * (ace ? ACE_ATTACK_MULTIPLIER : 1);
     const finalDamage = Math.round(amount * multiplier);
     this.health -= finalDamage;
 

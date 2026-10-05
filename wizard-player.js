@@ -36,7 +36,8 @@
   });
   dialog.addEventListener('cancel',event=>{event.preventDefault();if(!applying)close();});
   document.getElementById('closeWizard').addEventListener('click',()=>{if(!applying)close();});
-  for(const id of ['customizeStart','customizePaused'])document.getElementById(id).addEventListener('click',()=>window.openMageCreator(false));
+  document.getElementById('customizeStart').addEventListener('click',()=>window.openMageCreator(true));
+  document.getElementById('customizePaused').addEventListener('click',()=>window.openMageCreator(false));
 })();
 
 // Taming-slot pickup: use the approved leash/collar sprite while preserving the existing pickup logic and hitbox.
