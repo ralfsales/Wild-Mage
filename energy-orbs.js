@@ -5,6 +5,8 @@
   const chargedRange = element => SKILLS.find(skill => skill.element === element)?.range ?? 100;
   const EXPLOSIVE_RADIUS = chargedRange('grass') * 0.50;
   const EXPLOSIVE_SPEED_MULTIPLIER = 1.50;
+  const BASE_PROJECTILE_SPEED = 420;
+  const EXPLOSIVE_TRAVEL_DISTANCE = chargedRange('tame');
 
   const chargedSprites = {
     water: new Image(),
@@ -42,14 +44,14 @@
     originalAreaAttackDraw.call(this);
   };
 
-  // Explosive-upgrade projectiles travel 50% faster than conventional shots
-  // while keeping the same maximum travel distance.
+  // Explosive-upgrade projectiles travel 50% faster than conventional shots,
+  // but their maximum travel distance is fixed to the taming-shot range.
   const originalSpellUpdate = Spell.prototype.update;
   Spell.prototype.update = function(dt) {
     if (this.explosive && !this.explosiveSpeedBoosted) {
       this.vx *= EXPLOSIVE_SPEED_MULTIPLIER;
       this.vy *= EXPLOSIVE_SPEED_MULTIPLIER;
-      this.life /= EXPLOSIVE_SPEED_MULTIPLIER;
+      this.life = EXPLOSIVE_TRAVEL_DISTANCE / (BASE_PROJECTILE_SPEED * EXPLOSIVE_SPEED_MULTIPLIER);
       this.explosiveSpeedBoosted = true;
     }
     originalSpellUpdate.call(this, dt);
