@@ -1,7 +1,45 @@
 (() => {
   if (typeof Player === 'undefined') return;
 
+  const ACE_DURATION = 20;
+  const ACE_ATTACK_MULTIPLIER = 1.20;
+
   const originalPlayerDraw = Player.prototype.draw;
+  const originalPickupUpdate = Pickup.prototype.update;
+
+  // Ace now lasts 20 seconds. This wrapper only replaces Ace pickup handling;
+  // all other pickup types keep their existing behavior from the loaded game.
+  Pickup.prototype.update = function(dt) {
+    if (this.kind !== 'ace') {
+      originalPickupUpdate.call(this, dt);
+      return;
+    }
+
+    if (game.state !== 'playing' || expirePickup(this, dt) || !rectsOverlap(this, game.player)) return;
+    this.dead = true;
+    game.buffs.ace = ACE_DURATION;
+    game.floaters.push(new Floater(this.x - 30, this.y - 14, `Ace · ${ACE_DURATION}s · +20% attack`, '#fff0b0'));
+  };
+
+  // Ace keeps its all-element / special-state hit access, but its damage bonus
+  // is now a clear +20%. Normal elemental advantages remain at their original 1.6x.
+  Monster.prototype.takeDamage = function(amount, element, ace = false) {
+    if (this.dead || !this.canBeHit(element, ace)) return;
+    if (this.dashState === 'dashing' && element === 'water') this.finishDash(true);
+
+    const multiplier = ace ? ACE_ATTACK_MULTIPLIER : (strongAgainst(element, this.type) ? 1.6 : 1);
+    const finalDamage = Math.round(amount * multiplier);
+    this.health -= finalDamage;
+
+    game.floaters.push(new Floater(
+      this.x,
+      this.y - 10,
+      multiplier > 1 ? `${finalDamage}!` : `${finalDamage}`,
+      multiplier > 1 ? '#fff176' : '#ffffff'
+    ));
+    game.particles.burst(center(this), ELEMENT_COLORS[element], multiplier > 1 ? 18 : 9);
+    if (this.health <= 0) this.defeat();
+  };
 
   function drawAceAura(player, time) {
     const p = center(player);
