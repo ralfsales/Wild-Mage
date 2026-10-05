@@ -383,7 +383,7 @@ class Monster {
   defeat() {
     if (this.dead) return;
     this.dead = true;
-    const count = Math.floor(rand(2, 5));
+    const count = Math.floor(rand(1, 6));
     for (let i = 0; i < count; i++) {
       const p=game.freeSpot(this.x + rand(-10,22),this.y + rand(-10,22),12,12);
       game.coins.push(new Coin(p.x,p.y,1));

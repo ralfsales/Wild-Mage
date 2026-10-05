@@ -186,11 +186,11 @@ test('rock collisions block walking, fire dashes, and spells without tunneling',
 });
 test('bonus drops use a single ten percent gate, always include coins, and retain source type',()=>{
   for(const [roll,expected] of [[.099,true],[.1,false],[.9,false]]){
-    const {game,Monster,setRandom}=world();setRandom(roll);new Monster(100,100,'water').defeat();assert.ok(game.coins.length>=2);assert.equal(game.energyDrops.length+game.pickups.length,expected?1:0);
+    const {game,Monster,setRandom}=world();setRandom(roll);new Monster(100,100,'water').defeat();assert.ok(game.coins.length>=1 && game.coins.length<=5);assert.equal(game.energyDrops.length+game.pickups.length,expected?1:0);
   }
   for(const [selection,kind] of [[.3,'shield'],[.5,'union'],[.7,'upgrade'],[.9,'ace']]){
     const {game,Monster,setRandom}=world();const m=new Monster(100,100,'grass');
-    const values=[0,0,0,0,0,0,0,.01,selection];let n=0;setRandom(()=>values[n++]??0);m.defeat();
+    const values=[0,0,0,0,.01,selection];let n=0;setRandom(()=>values[n++]??0);m.defeat();
     assert.equal(game.pickups.length,1);assert.equal(game.pickups[0].type,'grass');assert.equal(game.pickups[0].kind,kind);assert.equal(game.energyDrops.length,0);
   }
 });
@@ -265,4 +265,12 @@ test('attack upgrades persist through time, other items, pauses and levels until
   setRandom(.9);equip();assert.equal(game.upgradeMode,'blast');assert.equal(game.buffs.upgrade,1);
   game.end();assert.equal(game.buffs.upgrade,0);equip();assert.equal(game.buffs.upgrade,0);
   game.start();assert.equal(game.buffs.upgrade,0);
+});
+
+
+test('defeated foes drop one to five identical single-value coins',()=>{
+  for(const [roll,count] of [[0,1],[.2,2],[.4,3],[.6,4],[.999999,5]]){
+    const {game,Monster,setRandom}=world();setRandom(roll);const foe=new Monster(100,100,'water');foe.defeat();foe.defeat();
+    assert.equal(game.coins.length,count);assert.ok(game.coins.every(c=>c.value===1));
+  }
 });
