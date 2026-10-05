@@ -22,7 +22,11 @@
       {src:P.mouth[appearance.mouth][appearance.mouthColor==='skin'?appearance.skin:appearance.mouthColor],position:FIXED.mouth[appearance.mouth]},
       long?null:hairLayer,{src:P.clothing[appearance.clothing],position:FIXED.clothing}].filter(Boolean);
     const images=await Promise.all(layers.map(layer=>new Promise((resolve,reject)=>{
-      const img=new Image();img.onload=()=>resolve({...layer,img});img.onerror=()=>reject(Error('An artwork layer could not load. Please try again.'));img.src=layer.src;
+      const img=new Image();
+      img.crossOrigin='anonymous';
+      img.onload=()=>resolve({...layer,img});
+      img.onerror=()=>reject(Error('An artwork layer could not load. Please try again.'));
+      img.src=layer.src;
     })));
     const sheet=document.createElement('canvas');sheet.width=1120;sheet.height=1120;const ctx=sheet.getContext('2d');
     for(const {img,position:p,filter} of images){
