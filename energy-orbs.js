@@ -3,6 +3,7 @@
   const CHARGED_COST = 1;
 
   const chargedRange = element => SKILLS.find(skill => skill.element === element)?.range ?? 100;
+  const EXPLOSIVE_RADIUS = chargedRange('grass') * 0.20;
 
   const chargedSprites = {
     water: new Image(),
@@ -15,11 +16,15 @@
 
   const originalAreaAttackDraw = AreaAttack.prototype.draw;
   AreaAttack.prototype.draw = function() {
-    const sprite = this.charged ? chargedSprites[this.element] : null;
+    // Charged attacks and upgraded explosive shots share the same elemental
+    // visual language. Explosions are simply much smaller versions.
+    const usesElementSprite = this.charged || this.explosiveUpgrade;
+    const sprite = usesElementSprite ? chargedSprites[this.element] : null;
 
     if (sprite?.complete && sprite.naturalWidth) {
       const progress = Math.max(0, Math.min(1, this.age / this.life));
-      const radius = Math.max(8, this.maxRadius * progress);
+      const minimumRadius = this.explosiveUpgrade ? 3 : 8;
+      const radius = Math.max(minimumRadius, this.maxRadius * progress);
       const diameter = radius * 2;
 
       ctx.save();
@@ -34,6 +39,21 @@
     }
 
     originalAreaAttackDraw.call(this);
+  };
+
+  // The explosive-shot upgrade reuses the same sprite for each element, but
+  // its blast is intentionally compact: exactly 20% of the grass charged
+  // attack's radius (grass range 150 => explosion radius 30).
+  Spell.prototype.explode = function() {
+    const blast = new AreaAttack(
+      { x: this.x, y: this.y },
+      this.skill.element,
+      EXPLOSIVE_RADIUS,
+      this.skill.damage
+    );
+    blast.explosiveUpgrade = true;
+    blast.ace = this.ace;
+    game.areaAttacks.push(blast);
   };
 
   Game.prototype.castCharged = function() {
