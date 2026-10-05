@@ -4,6 +4,7 @@
 
   const chargedRange = element => SKILLS.find(skill => skill.element === element)?.range ?? 100;
   const EXPLOSIVE_RADIUS = chargedRange('grass') * 0.50;
+  const EXPLOSIVE_SPEED_MULTIPLIER = 1.50;
 
   const chargedSprites = {
     water: new Image(),
@@ -39,6 +40,19 @@
     }
 
     originalAreaAttackDraw.call(this);
+  };
+
+  // Explosive-upgrade projectiles travel 50% faster than conventional shots
+  // while keeping the same maximum travel distance.
+  const originalSpellUpdate = Spell.prototype.update;
+  Spell.prototype.update = function(dt) {
+    if (this.explosive && !this.explosiveSpeedBoosted) {
+      this.vx *= EXPLOSIVE_SPEED_MULTIPLIER;
+      this.vy *= EXPLOSIVE_SPEED_MULTIPLIER;
+      this.life /= EXPLOSIVE_SPEED_MULTIPLIER;
+      this.explosiveSpeedBoosted = true;
+    }
+    originalSpellUpdate.call(this, dt);
   };
 
   // The explosive-shot upgrade reuses the same sprite for each element, but
