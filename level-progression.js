@@ -1,5 +1,7 @@
 (() => {
   const LEVEL_TWO_DEFEAT_TARGET = 20;
+  const LEVEL_THREE_DEFEAT_TARGET = 30;
+  const LEVEL_THREE_GRASS_ALLIES = 5;
 
   function levelCompletePanel() {
     const screen = document.getElementById('levelCompleteScreen');
@@ -12,9 +14,23 @@
     };
   }
 
+  function grassAllies(currentGame) {
+    return currentGame.allies.filter(
+      ally => !ally.dead && ally.summonLife === undefined && ally.type === 'grass'
+    ).length;
+  }
+
   function setCompletionCopy(levelFinished) {
     const ui = levelCompletePanel();
     if (!ui.screen) return;
+
+    if (levelFinished === 3) {
+      if (ui.eyebrow) ui.eyebrow.textContent = 'FOREST TRIAL CLEARED';
+      if (ui.title) ui.title.innerHTML = 'Thirty foes.<br>Five grass allies.';
+      if (ui.body) ui.body.textContent = 'You cleared the forest trial with five grass allies at your side.';
+      if (ui.button) ui.button.textContent = 'Continue →';
+      return;
+    }
 
     if (levelFinished === 2) {
       if (ui.eyebrow) ui.eyebrow.textContent = 'WILDWOOD CLEARED';
@@ -38,11 +54,17 @@
 
   const originalDefeat = Monster.prototype.defeat;
   Monster.prototype.defeat = function() {
-    const countForLevelTwo = !this.dead && game?.state === 'playing' && game?.level === 2;
+    const levelAtDefeat = game?.level;
+    const countForObjective =
+      !this.dead &&
+      game?.state === 'playing' &&
+      (levelAtDefeat === 2 || levelAtDefeat === 3);
+
     originalDefeat.call(this);
 
-    if (countForLevelTwo) {
-      game.levelDefeats = Math.min(LEVEL_TWO_DEFEAT_TARGET, (game.levelDefeats || 0) + 1);
+    if (countForObjective) {
+      const cap = levelAtDefeat === 2 ? LEVEL_TWO_DEFEAT_TARGET : LEVEL_THREE_DEFEAT_TARGET;
+      game.levelDefeats = Math.min(cap, (game.levelDefeats || 0) + 1);
     }
   };
 
@@ -56,7 +78,11 @@
     if (this.level === 2) {
       const defeated = Math.min(LEVEL_TWO_DEFEAT_TARGET, this.levelDefeats || 0);
       progress.textContent = `LEVEL 2 · Defeat ${defeated} / ${LEVEL_TWO_DEFEAT_TARGET} foes to unlock level 3`;
-    } else if (this.level >= 3) {
+    } else if (this.level === 3) {
+      const defeated = Math.min(LEVEL_THREE_DEFEAT_TARGET, this.levelDefeats || 0);
+      const grass = Math.min(LEVEL_THREE_GRASS_ALLIES, grassAllies(this));
+      progress.textContent = `LEVEL 3 · Defeat ${defeated} / ${LEVEL_THREE_DEFEAT_TARGET} foes · Grass allies ${grass} / ${LEVEL_THREE_GRASS_ALLIES}`;
+    } else if (this.level > 3) {
       progress.textContent = `LEVEL ${this.level} · The Wildwood deepens`;
     }
   };
@@ -74,6 +100,22 @@
       clearInput();
       pauseButton.disabled = true;
       setCompletionCopy(2);
+      const screen = document.getElementById('levelCompleteScreen');
+      screen?.classList.remove('hidden');
+      document.getElementById('nextLevelButton')?.focus({ preventScroll: true });
+      return;
+    }
+
+    if (
+      this.state === 'playing' &&
+      this.level === 3 &&
+      (this.levelDefeats || 0) >= LEVEL_THREE_DEFEAT_TARGET &&
+      grassAllies(this) >= LEVEL_THREE_GRASS_ALLIES
+    ) {
+      this.state = 'levelcomplete';
+      clearInput();
+      pauseButton.disabled = true;
+      setCompletionCopy(3);
       const screen = document.getElementById('levelCompleteScreen');
       screen?.classList.remove('hidden');
       document.getElementById('nextLevelButton')?.focus({ preventScroll: true });
@@ -95,15 +137,19 @@
     this.player.health = this.player.maxHealth;
     clearInput();
 
+    if (this.level === 3 && typeof window.setupLevel3Forest === 'function') {
+      window.setupLevel3Forest(this);
+    }
+
     document.getElementById('levelCompleteScreen')?.classList.add('hidden');
     pauseButton.disabled = false;
     pauseButton.innerHTML = 'Pause <kbd>Esc</kbd>';
 
-    for (let i = 0; i < 4; i++) this.spawnMonster();
+    const initialSpawns = this.level === 3 ? 6 : 4;
+    for (let i = 0; i < initialSpawns; i++) this.spawnMonster();
     this.updateLesson();
     canvas.focus({ preventScroll: true });
 
-    // Restore the level-one completion copy in case a new run reaches it later.
     if (finishedLevel === 1) setCompletionCopy(1);
   };
 })();
