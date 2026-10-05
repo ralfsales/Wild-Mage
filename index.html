@@ -46,14 +46,14 @@
       <details open><summary>How to play · Your first minute</summary><div class="guide-grid">
       <p><strong>1 · Explore & attack</strong>Move with arrow keys. Face a foe and tap F (fire), D (water), or S (grass). Select a spell card and click the field to aim. Rocks block movement and shots.</p>
       <p><strong>2 · Befriend all three</strong>Get close and tap A toward a foe: each attempt has a 75% chance. No need to hurt it first. You have three slots; level one keeps one friend per element. Your discoveries stay checked even if a friend falls.</p>
-      <p><strong>3 · Charge your magic</strong>Collect violet energy from defeated foes: three orbs fill one charge, up to three charges. Hold F, D, or S for half a second for a fire pulse, water wave, or earthquake. Hold A to command your allies’ special moves. Each uses one full charge.</p>
+      <p><strong>3 · Charge your magic</strong>Each violet energy orb powers one charged move. You can store up to five energy orbs. Hold F, D, or S for half a second for a fire pulse, water wave, or earthquake. Hold A to command your allies’ special moves. Each charged action uses one orb.</p>
       <p><strong>4 · Read the warning</strong>Dodge a fire bird’s dash or stop it with water. Only grass hits a buried bush; move away from its eruption warning. Water slimes vanish and rain down on your last position: step away from the ripples. Tame these foes once they return to their normal state. Survive 60 seconds and tame all three elements to unlock level two.</p>
       </div></details>
       <details><summary>Field drops · Collect within 10 seconds</summary><div class="guide-grid">
       <p><strong>Collect before they vanish</strong>Coins, bonus items, energy, health potions, and slot charms disappear after 10 seconds of play if uncollected. Pausing freezes this timer. Every defeated foe drops coins and has a 10% bonus-item chance.</p>
       <p><strong>◇ Element shield · 10s</strong>Immunity to the element of the foe that dropped it.</p><p><strong>5 Rare union · 15s</strong>Five temporary helpers of the defeated foe’s element. They use no taming slots and do not count toward your lesson.</p>
       <p><strong>↗ Attack upgrade · Until replaced or defeated</strong>Randomly gives three spreading shots or an exploding shot. Applies to regular elemental attacks and lasts until you collect another attack upgrade or die.</p><p><strong>★ Ace · 8s</strong>Your spells hit every element, including buried or dashing foes, with bonus damage. You take no damage.</p>
-      <p><strong>Violet energy</strong>One energy point toward your next charge. Full energy leaves the orb on the ground until its 10-second timer expires.</p><p><strong>Coins & health</strong>Every defeated foe drops coins. Red health bottles appear around the clearing at random intervals and heal 35 health.</p>
+      <p><strong>Violet energy</strong>Each orb can power one charged attack. You can keep up to five orbs in your inventory; extra orbs stay on the ground until their timer expires.</p><p><strong>Coins & health</strong>Every defeated foe drops coins. Red health bottles appear around the clearing at random intervals and heal 35 health.</p>
       </div></details></section>
     <section class="spell-section" aria-label="Spell selection">
       <div class="section-label"><span>YOUR SPELLBOOK</span><span>Tap key: normal · Hold key: charged · Click field: normal</span></div>
@@ -64,11 +64,75 @@
         <button class="spell-card" data-skill="3" style="--spell:#e4c77d" aria-pressed="false"><span class="spell-icon" aria-hidden="true">✧</span><span><strong>Tame</strong><small>Turn a foe into a friend</small></span><kbd>A</kbd></button>
       </div>
     </section>
-    <footer class="hint-bar"><span><b>FIELD NOTES</b> Hold F/D/S for charged pulses; hold A for ally specials. Collect violet energy: 3 orbs = 1 charge, max 3.</span><span>Move <kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd> · Pause <kbd>Esc</kbd></span></footer>
+    <footer class="hint-bar"><span><b>FIELD NOTES</b> Hold F/D/S for charged pulses; hold A for ally specials. 1 violet orb = 1 charged action · max 5 stored.</span><span>Move <kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd> · Pause <kbd>Esc</kbd></span></footer>
   </main>
 
   <dialog id="wizardDialog" aria-label="Customize your wizard"><button id="closeWizard" type="button" aria-label="Close character creator">Close ×</button><iframe id="wizardFrame" title="Wizard character generator"></iframe></dialog>
   <script src="game.js"></script>
+  <script>
+  (() => {
+    const ENERGY_CAP = 5;
+    const CHARGED_COST = 1;
+
+    Game.prototype.castCharged = function() {
+      if (this.state !== "playing" || this.player.cooldown > 0) return false;
+      const element = SKILLS[this.player.selectedSkill].element;
+      if (this.energy < CHARGED_COST) {
+        this.floaters.push(new Floater(this.player.x - 30, this.player.y - 20, "Need 1 energy orb", "#bbabed"));
+        return false;
+      }
+      if (element === "tame") {
+        const ready = this.allies.filter(ally => !ally.dead && !ally.special && this.monsters.some(m => !m.dead && m.canBeHit(ally.type)));
+        if (!ready.length) {
+          this.floaters.push(new Floater(this.player.x - 30, this.player.y - 20, "No allies ready / no targets", "#bbabed"));
+          return false;
+        }
+        ready.forEach(ally => ally.useSpecial());
+      } else {
+        const pulse = new AreaAttack(center(this.player), element, 170, 42);
+        pulse.ace = this.buffs.ace > 0;
+        this.areaAttacks.push(pulse);
+      }
+      this.energy -= CHARGED_COST;
+      this.player.cooldown = 0.7;
+      this.audio.play(620, 0.15, "triangle");
+      return true;
+    };
+
+    EnergyOrb.prototype.update = function(dt) {
+      if (expirePickup(this, dt)) return;
+      this.phase += dt * 4;
+      if (game.energy < ENERGY_CAP && rectsOverlap(this, game.player)) {
+        game.energy = Math.min(ENERGY_CAP, game.energy + 1);
+        this.dead = true;
+        game.floaters.push(new Floater(this.x, this.y - 14, "+1 energy", "#c9acff"));
+        game.audio.play(760, 0.1, "sine");
+      }
+    };
+
+    drawChargeMeter = function(currentGame) {
+      const energy = Math.max(0, Math.min(ENERGY_CAP, currentGame.energy));
+      ctx.fillStyle = '#111421e8';
+      ctx.fillRect(12, HEIGHT - 43, 480, 31);
+      ctx.fillStyle = '#e2d2ff';
+      ctx.font = "12px 'Courier New'";
+      ctx.fillText(`ENERGY ${energy}/${ENERGY_CAP}`, 23, HEIGHT - 23);
+      for (let i = 0; i < ENERGY_CAP; i++) {
+        const x = 111 + i * 43;
+        ctx.fillStyle = '#362c49';
+        ctx.fillRect(x, HEIGHT - 34, 36, 13);
+        if (i < energy) {
+          ctx.fillStyle = '#c3a1ff';
+          ctx.fillRect(x, HEIGHT - 34, 36, 13);
+        }
+        ctx.strokeStyle = '#c3a1ff';
+        ctx.strokeRect(x, HEIGHT - 34, 36, 13);
+      }
+      ctx.fillStyle = '#b8a9d4';
+      ctx.fillText('1 orb = 1 charged move', 337, HEIGHT - 23);
+    };
+  })();
+  </script>
   <script src="wizard-player.js"></script>
 
 </body>
