@@ -2,6 +2,32 @@
   const ENERGY_CAP = 5;
   const CHARGED_COST = 1;
 
+  const chargedRange = element => SKILLS.find(skill => skill.element === element)?.range ?? 100;
+
+  const waterChargedSprite = new Image();
+  waterChargedSprite.src = 'assets/effects/water-charged-ring.svg';
+
+  const originalAreaAttackDraw = AreaAttack.prototype.draw;
+  AreaAttack.prototype.draw = function() {
+    if (this.charged && this.element === 'water' && waterChargedSprite.complete && waterChargedSprite.naturalWidth) {
+      const progress = Math.max(0, Math.min(1, this.age / this.life));
+      const radius = Math.max(8, this.maxRadius * progress);
+      const diameter = radius * 2;
+
+      ctx.save();
+      ctx.translate(this.x, this.y);
+      ctx.rotate(this.age * 0.9);
+      ctx.globalAlpha = 0.96 - progress * 0.18;
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(waterChargedSprite, -diameter / 2, -diameter / 2, diameter, diameter);
+      ctx.restore();
+      return;
+    }
+
+    originalAreaAttackDraw.call(this);
+  };
+
   Game.prototype.castCharged = function() {
     if (this.state !== "playing" || this.player.cooldown > 0) return false;
     const element = SKILLS[this.player.selectedSkill].element;
@@ -19,17 +45,21 @@
         return false;
       }
 
-      // Charged Tame commands every living ally to cast the same charged
-      // elemental attack the wizard would cast for that ally's element:
-      // fire pulse, water wave, or grass earthquake.
+      // Every living tamed ally casts the charged version of its own element.
+      // Its charged AoE reaches the same distance as that element's normal shot,
+      // but expands in every direction from the ally instead of travelling linearly.
       ready.forEach(ally => {
-        const pulse = new AreaAttack(center(ally), ally.type, 170, 42);
+        const pulse = new AreaAttack(center(ally), ally.type, chargedRange(ally.type), 42);
+        pulse.charged = true;
         pulse.ace = this.buffs.ace > 0;
         this.areaAttacks.push(pulse);
         this.particles.burst(center(ally), ELEMENT_COLORS[ally.type] || "#cfb2ff", 16);
       });
     } else {
-      const pulse = new AreaAttack(center(this.player), element, 170, 42);
+      // Charged elemental attacks use the same maximum reach as their normal shot,
+      // but cover a full circle around the caster.
+      const pulse = new AreaAttack(center(this.player), element, chargedRange(element), 42);
+      pulse.charged = true;
       pulse.ace = this.buffs.ace > 0;
       this.areaAttacks.push(pulse);
     }
