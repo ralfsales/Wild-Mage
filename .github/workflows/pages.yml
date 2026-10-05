@@ -29,6 +29,9 @@ jobs:
         with:
           enablement: true
 
+      - name: Test gameplay and character creation
+        run: node --test tests/*.test.cjs
+
       - name: Upload site
         uses: actions/upload-pages-artifact@v3
         with:
