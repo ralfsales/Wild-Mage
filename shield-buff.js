@@ -28,8 +28,9 @@
 
   function drawShieldBubble(actor, type, index, foreground = false) {
     const c = center(actor);
-    const pulse = Math.sin((game?.elapsed || 0) * 6 + index * 1.7) * 1.8;
-    const radius = 27 + index * 5 + pulse;
+    const pulse = Math.sin((game?.elapsed || 0) * 6 + index * 1.7) * 2;
+    const baseRadius = Math.max(actor.w, actor.h) * 1.12;
+    const radius = baseRadius + 14 + index * 6 + pulse;
     const color = ELEMENT_COLORS[type] || "#cfb2ff";
 
     ctx.save();
@@ -57,7 +58,7 @@
       ctx.globalAlpha = 0.28;
       ctx.lineWidth = 1.5;
       ctx.beginPath();
-      ctx.arc(c.x, c.y, radius + 4, 0, Math.PI * 2);
+      ctx.arc(c.x, c.y, radius + 6, 0, Math.PI * 2);
       ctx.stroke();
 
       const t = (game?.elapsed || 0) * 2.4 + index * 2.1;
@@ -66,7 +67,7 @@
         ctx.globalAlpha = 0.75;
         ctx.fillStyle = color;
         ctx.beginPath();
-        ctx.arc(c.x + Math.cos(a) * (radius + 2), c.y + Math.sin(a) * (radius + 2), 1.8, 0, Math.PI * 2);
+        ctx.arc(c.x + Math.cos(a) * (radius + 3), c.y + Math.sin(a) * (radius + 3), 1.8, 0, Math.PI * 2);
         ctx.fill();
       }
     }
