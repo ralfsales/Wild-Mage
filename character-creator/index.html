@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Wild Mage — Character Creator</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="creator-shell">
+    <header class="creator-header">
+      <div>
+        <p class="eyebrow">WILD MAGE</p>
+        <h1>Character Creation</h1>
+        <p class="subtitle">Build the mage that will enter the Wildwood.</p>
+      </div>
+      <div class="header-actions">
+        <button id="randomizeBtn" type="button">Randomize ✦</button>
+        <button id="resetBtn" type="button">Reset</button>
+        <button id="saveBtn" class="primary" type="button">Save character →</button>
+      </div>
+    </header>
+
+    <section class="creator-grid">
+      <aside class="preview-panel">
+        <div class="preview-label">LIVE PREVIEW</div>
+        <div class="preview-stage">
+          <svg id="magePreview" viewBox="0 0 320 400" role="img" aria-label="Character preview"></svg>
+        </div>
+        <div class="preview-summary">
+          <div><span>Preset</span><strong id="presetLabel">Wildwood Mage</strong></div>
+          <div><span>Saved</span><strong id="savedState">Not yet</strong></div>
+        </div>
+      </aside>
+
+      <section class="editor-panel">
+        <nav id="categoryTabs" class="category-tabs" aria-label="Character categories"></nav>
+        <div id="editorContent" class="editor-content"></div>
+      </section>
+    </section>
+  </main>
+
+  <script src="sprites.js"></script>
+  <script src="hair-sprites.js"></script>
+  <script src="eyes-sprites.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

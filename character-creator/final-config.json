@@ -1,0 +1,51 @@
+{
+  "version": 28,
+  "status": "approved-final",
+  "canvas": {"width": 512, "height": 512},
+  "layerOrder": ["body", "eyes", "freckles", "mouth", "beard", "hair"],
+  "body": {
+    "skinTones": ["fair", "medium", "dark"],
+    "nose": "defined on all body sprites, with stronger contrast on medium/dark"
+  },
+  "eyes": {
+    "colors": ["black", "brown", "blue", "green", "yellow", "pink"],
+    "colorBehavior": "iris pixels are recolored inside each eye sprite variant; no separate iris overlay",
+    "placements": {
+      "round": {"x": 0, "y": -103, "scale": 31},
+      "mid": {"x": 0, "y": -103, "scale": 35},
+      "narrow": {"x": 0, "y": -103, "scale": 34}
+    }
+  },
+  "mouth": {
+    "colors": ["skin", "red-lipstick", "plum-lipstick"],
+    "placements": {
+      "thin-straight": {"x": 0, "y": -56, "scale": 45},
+      "thin-smile": {"x": 0, "y": -55, "scale": 40},
+      "thick-straight": {"x": 0, "y": -51, "scale": 15},
+      "thick-smile": {"x": 0, "y": -52, "scale": 15}
+    }
+  },
+  "features": {
+    "freckles": {"x": 0, "y": -73, "scale": 34},
+    "beard": {"x": 0, "y": -70, "scale": 47, "colorSource": "hair"}
+  },
+  "hair": {
+    "colors": ["darkBrown", "brown", "blond", "ruivo", "purple", "white", "green", "pink"],
+    "layering": "all visible hair renders above beard; body is lower than hair",
+    "placements": {
+      "bald": {"x": 0, "y": 0, "scale": 100},
+      "moicano": {"x": -13, "y": -6, "scale": 122},
+      "curly-short": {"x": 0, "y": 7, "scale": 133},
+      "coil": {"x": -4, "y": -8, "scale": 128},
+      "militar": {"x": -4, "y": 50, "scale": 169},
+      "side-part": {"x": -3, "y": 24, "scale": 127},
+      "chanel": {"x": 1, "y": 47, "scale": 140},
+      "bob": {"x": 0, "y": -131, "scale": 61},
+      "straight-long": {"x": -1, "y": -74, "scale": 71},
+      "curly-long": {"x": -1, "y": -96, "scale": 69},
+      "ponytail": {"x": 11, "y": -142, "scale": 69},
+      "dreads": {"x": -4, "y": -120, "scale": 63},
+      "blackpower": {"x": -6, "y": -151, "scale": 63}
+    }
+  }
+}
