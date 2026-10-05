@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Wild Mage · Create your wizard</title>
+<style>
+:root{--bg:#071711;--panel:#10271f;--line:#3d654f;--text:#f5ecd9;--muted:#9fb3a7;--gold:#e7c078}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:radial-gradient(circle at top,#17372d,#071711 70%);color:var(--text);font-family:Georgia,serif}
+body{min-height:100vh}
+main{width:100%;max-width:1320px;height:100vh;margin:0 auto;padding:8px 12px 10px;display:flex;flex-direction:column;overflow:hidden}
+h1{color:#f1cf92;margin:0 0 1px;font-size:clamp(18px,1.35vw,24px);line-height:1.05}
+.sub{margin:0 0 3px;color:var(--muted);font-size:10px;line-height:1.15}
+.badge{display:inline-block;align-self:flex-start;padding:2px 7px;border:1px solid #556f5a;border-radius:999px;color:#edd196;background:#102a22;font:10px system-ui,sans-serif;margin-bottom:5px}
+.grid{flex:1;min-height:0;display:grid;grid-template-columns:minmax(300px,31%) minmax(0,69%);gap:10px;align-items:stretch}
+.panel{min-height:0;background:#0b211aee;border:1px solid var(--line);border-radius:12px;padding:8px;overflow:hidden}
+.grid>.panel:first-child{display:flex;flex-direction:column;padding:6px}
+.workspace{position:relative;flex:1;min-height:0;width:100%;border-radius:10px;overflow:hidden;background:radial-gradient(circle,#28493b,#0e261f 55%,#06120e)}
+.stage{position:absolute;width:560px;height:560px;left:50%;top:50%;transform:translate(-50%,-50%) scale(.56);overflow:visible;transform-origin:center center}
+.layer{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none;transform-origin:center center}
+.status{display:flex;gap:4px;flex-wrap:wrap;margin-top:5px}.status span{font:9px system-ui,sans-serif;background:#102b22;border:1px solid #355c49;border-radius:10px;padding:2px 5px}
+.note{font:10.5px/1.2 system-ui,sans-serif;color:#a8baae;margin:4px 0}
+.actions{display:flex;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid #345444}
+.grid>.panel:nth-child(2){display:flex;flex-direction:column;overflow:auto;scrollbar-width:thin}
+.controlsGrid{display:grid;grid-template-columns:repeat(2,minmax(220px,1fr));gap:8px;align-content:start}
+.card{border:1px solid #345444;border-radius:9px;padding:6px 8px;background:#0d241d;min-width:0}
+.card h3{margin:0 0 4px;color:var(--gold);font-size:14px;line-height:1.1}
+.row{display:grid;grid-template-columns:88px minmax(0,1fr);gap:5px;align-items:center;margin:3px 0}
+label{color:#d8e0d8;font-size:11px}
+select,button{width:100%;background:#0b1e18;color:#fff3d8;border:1px solid #4b705a;border-radius:7px;padding:5px 6px;font-size:11px;min-height:28px}
+.check{display:flex;gap:5px;align-items:center;margin:3px 0}.check input{width:14px;height:14px}
+input[type=range]{width:100%}
+input[type=number]{width:72px;max-width:72px;background:#0b1e18;color:#fff3d8;border:1px solid #4b705a;border-radius:6px;padding:4px;font-size:10px}
+@media (max-height:820px) and (min-width:901px){
+  main{padding-top:6px}.sub{display:none}
+  .stage{top:50%;transform:translate(-50%,-50%) scale(.52)}
+  .card{padding:5px 7px}.row{margin:2px 0}select,button{padding:4px 5px;min-height:25px}.note{font-size:9.5px;margin:3px 0}.status span{font-size:8px}
+}
+@media (min-height:1000px) and (min-width:901px){.stage{transform:translate(-50%,-50%) scale(.60)}}
+@media(max-width:1100px) and (min-width:901px){
+  .grid{grid-template-columns:minmax(280px,34%) minmax(0,66%)}
+  .stage{transform:translate(-50%,-50%) scale(.50)}
+  .controlsGrid{grid-template-columns:repeat(2,minmax(190px,1fr))}
+  .row{grid-template-columns:78px minmax(0,1fr)}
+}
+@media(max-width:900px){
+  html,body{overflow:auto;height:auto}main{height:auto;min-height:100vh;overflow:visible}.grid{grid-template-columns:1fr;display:grid}.panel{overflow:visible}.grid>.panel:nth-child(2){overflow:visible}.workspace{height:560px;flex:none}.stage{top:48%;transform:translate(-50%,-50%) scale(.72)}.controlsGrid{grid-template-columns:repeat(2,minmax(230px,1fr))}
+}
+@media(max-width:620px){.controlsGrid{grid-template-columns:1fr}.workspace{height:500px}.stage{transform:translate(-50%,-50%) scale(.60)}}
+</style>
+</head>
+<body>
+<main>
+<h1>Create your wizard</h1>
+<p class="sub">Create and preview your final character appearance.</p>
+
+<div class="grid">
+<section class="panel">
+  <div class="workspace">
+    <div class="stage">
+      <img id="headLayer" class="layer" alt="">
+      <img id="hairBackLayer" class="layer" alt="">
+      <img id="eyesLayer" class="layer" alt="">
+      <img id="frecklesLayer" class="layer" alt="">
+      <img id="mouthLayer" class="layer" alt="">
+      <img id="hairFrontLayer" class="layer" alt="">
+      <img id="clothingLayer" class="layer" alt="">
+    </div>
+  </div>
+
+</section>
+
+<section class="panel">
+  <div class="controlsGrid">
+    <div class="card">
+      <h3>Skin</h3>
+      <div class="row"><label for="skin">Skin tone</label>
+        <select id="skin">
+          <option value="fair">Fair</option>
+          <option value="medium">Medium / Brown</option>
+          <option value="dark">Dark / Black</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Eyes</h3>
+      <div class="row"><label for="eyes">Shape</label>
+        <select id="eyes">
+          <option value="round">Round</option>
+          <option value="mid" selected>Mid</option>
+          <option value="narrow">Narrow</option>
+          <option value="frown">Frown</option>
+        </select>
+      </div>
+      <div class="row"><label for="eyeColor">Iris colour</label>
+        <select id="eyeColor">
+          <option value="black">Black</option>
+          <option value="brown" selected>Brown</option>
+          <option value="blue">Blue</option>
+          <option value="green">Green</option>
+          <option value="yellow">Yellow</option>
+          <option value="pink">Pink</option>
+        </select>
+      </div>
+
+      <div id="masculineAdjust" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid #345444;">
+        <p class="note">Frown eye adjustment</p>
+
+        <div class="row"><label>X</label>
+          <div style="display:grid;grid-template-columns:1fr 86px;gap:8px;align-items:center;">
+            <input id="mascX" type="range" min="-300" max="300" step="1">
+            <input id="mascXn" type="number" min="-300" max="300" step="1">
+          </div>
+        </div>
+
+        <div class="row"><label>Y</label>
+          <div style="display:grid;grid-template-columns:1fr 86px;gap:8px;align-items:center;">
+            <input id="mascY" type="range" min="-300" max="300" step="1">
+            <input id="mascYn" type="number" min="-300" max="300" step="1">
+          </div>
+        </div>
+
+        <div class="row"><label>Scale</label>
+          <div style="display:grid;grid-template-columns:1fr 86px;gap:8px;align-items:center;">
+            <input id="mascS" type="range" min="5" max="250" step="1">
+            <input id="mascSn" type="number" min="5" max="250" step="1">
+          </div>
+        </div>
+
+        <p id="mascCoords" class="note"></p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Mouth</h3>
+      <div class="row"><label for="mouth">Style</label>
+        <select id="mouth">
+          <option value="thin-smile">Thin Smile</option>
+          <option value="thin-straight">Thin Straight</option>
+          <option value="thick-smile">Thick Smile</option>
+          <option value="thick-straight">Thick Straight</option>
+          <option value="narrow">Narrow</option>
+        </select>
+      </div>
+      <div class="row"><label for="mouthColor">Lips</label>
+        <select id="mouthColor">
+          <option value="skin">None (Skin Colour)</option>
+          <option value="red">Red Lipstick</option>
+          <option value="plum">Plum Lipstick</option>
+        </select>
+      </div>
+
+      <div id="thinSmileAdjust" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid #345444;">
+        <p class="note">Thin smile adjustment</p>
+
+        <div class="row"><label>X</label>
+          <div style="display:grid;grid-template-columns:1fr 86px;gap:8px;align-items:center;">
+            <input id="thinSmileX" type="range" min="-300" max="300" step="1">
+            <input id="thinSmileXn" type="number" min="-300" max="300" step="1">
+          </div>
+        </div>
+
+        <div class="row"><label>Y</label>
+          <div style="display:grid;grid-template-columns:1fr 86px;gap:8px;align-items:center;">
+            <input id="thinSmileY" type="range" min="-300" max="300" step="1">
+            <input id="thinSmileYn" type="number" min="-300" max="300" step="1">
+          </div>
+        </div>
+
+        <div class="row"><label>Scale</label>
+          <div style="display:grid;grid-template-columns:1fr 86px;gap:8px;align-items:center;">
+            <input id="thinSmileS" type="range" min="5" max="250" step="1">
+            <input id="thinSmileSn" type="number" min="5" max="250" step="1">
+          </div>
+        </div>
+
+        <p id="thinSmileCoords" class="note"></p>
+      </div>
+
+      <div id="masculineMouthAdjust" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid #345444;">
+        <p class="note">Narrow mouth adjustment</p>
+
+        <div class="row"><label>X</label>
+          <div style="display:grid;grid-template-columns:1fr 86px;gap:8px;align-items:center;">
+            <input id="mascMouthX" type="range" min="-300" max="300" step="1">
+            <input id="mascMouthXn" type="number" min="-300" max="300" step="1">
+          </div>
+        </div>
+
+        <div class="row"><label>Y</label>
+          <div style="display:grid;grid-template-columns:1fr 86px;gap:8px;align-items:center;">
+            <input id="mascMouthY" type="range" min="-300" max="300" step="1">
+            <input id="mascMouthYn" type="number" min="-300" max="300" step="1">
+          </div>
+        </div>
+
+        <div class="row"><label>Scale</label>
+          <div style="display:grid;grid-template-columns:1fr 86px;gap:8px;align-items:center;">
+            <input id="mascMouthS" type="range" min="5" max="250" step="1">
+            <input id="mascMouthSn" type="number" min="5" max="250" step="1">
+          </div>
+        </div>
+
+        <p id="mascMouthCoords" class="note"></p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Face Details</h3>
+      <div class="check"><input id="frecklesToggle" type="checkbox"><label for="frecklesToggle">Show freckles</label></div>
+    </div>
+
+    <div class="card">
+      <h3>Hair</h3>
+      <div class="row"><label for="hair">Style</label><select id="hair"></select></div>
+      <div class="row"><label for="hairColor">Colour</label>
+        <select id="hairColor">
+          <option value="darkBrown">Dark Brown</option>
+          <option value="brown">Brown</option>
+          <option value="blond">Blond</option>
+          <option value="ruivo">Ruivo</option>
+          <option value="purple">Purple</option>
+          <option value="white">White</option>
+          <option value="green">Green</option>
+          <option value="pink">Pink</option>
+        </select>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Clothing</h3>
+      <div class="row"><label for="clothing">Outfit</label>
+        <select id="clothing">
+          <option value="original">Original</option>
+          <option value="darkNavy">Dark Navy</option>
+          <option value="militaryGreen">Military Green</option>
+          <option value="woodyBrown">Woody Brown</option>
+          <option value="salmonPink">Salmon Pink</option>
+        </select>
+      </div>
+    </div>
+
+  </div>
+  <div class="actions"><button id="random">Randomise</button><button id="reset">Reset</button><button id="useWizard">Use this wizard</button><button id="cancelWizard">Cancel</button></div><p id="exportStatus" class="note" role="status"></p>
+</section>
+</div>
+
+<script>
+const P = {
+  head:{fair:'assets/head_only/head-fair.png',medium:'assets/head_only/head-medium.png',dark:'assets/head_only/head-dark.png'},
+  clothing:{original:'assets/clothing/variants/approved-original.png',darkNavy:'assets/clothing/variants/approved-dark-navy.png',militaryGreen:'assets/clothing/variants/approved-military-green.png',woodyBrown:'assets/clothing/variants/approved-woody-brown.png',salmonPink:'assets/clothing/variants/approved-salmon-pink.png'},
+  eyes:{}, mouth:{}, freckles:'assets/skin-features/freckles.png',
+  hair:{moicano:'assets/hair/moicano.png','curly-short':'assets/hair/curly-short.png',coil:'assets/hair/coil.png',militar:'assets/hair/militar.png','side-part':'assets/hair/side-part.png',chanel:'assets/hair/chanel.png',bob:'assets/hair/bob.png','straight-long':'assets/hair/straight-long.png','curly-long':'assets/hair/curly-long.png',ponytail:'assets/hair/ponytail.png',dreads:'assets/hair/dreads.png',blackpower:'assets/hair/blackpower.png'}
+};
+const EYE_COLORS=['black','brown','blue','green','yellow','pink'];
+for(const shape of ['round','mid','narrow']){P.eyes[shape]={};for(const color of EYE_COLORS){P.eyes[shape][color]=`assets/eyes/variants/${shape}-${color}.png`;}}
+P.eyes.frown={};
+for(const color of EYE_COLORS){P.eyes.frown[color]=`assets/eyes/variants/frown-${color}.png`;}
+for(const style of ['thin-smile','thin-straight','thick-smile','thick-straight']){
+  P.mouth[style]={red:`assets/mouth/variants/${style}-red.png`,plum:`assets/mouth/variants/${style}-plum.png`,fair:`assets/mouth/variants/${style}-skin-fair.png`,medium:`assets/mouth/variants/${style}-skin-medium.png`,dark:`assets/mouth/variants/${style}-skin-dark.png`};
+}
+P.mouth['narrow']={
+  red:'assets/mouth/variants/narrow-red.png',
+  plum:'assets/mouth/variants/narrow-plum.png',
+  fair:'assets/mouth/variants/narrow-skin-fair.png',
+  medium:'assets/mouth/variants/narrow-skin-medium.png',
+  dark:'assets/mouth/variants/narrow-skin-dark.png'
+};
+const FIXED={
+  eyes:{mid:{x:0,y:-120,s:35},round:{x:0,y:-120,s:32},narrow:{x:0,y:-122,s:36},frown:{x:0,y:-122,s:31}},
+  mouth:{'thin-smile':{x:0,y:-62,s:32},'thin-straight':{x:0,y:-63,s:45},'thick-smile':{x:0,y:-54,s:15},'thick-straight':{x:0,y:-59,s:15},'narrow':{x:0,y:-62,s:30}},
+  freckles:{x:0,y:-88,s:29},
+  clothing:{x:-1,y:209,s:115},
+  hair:{moicano:{x:-15,y:-6,s:123},'curly-short':{x:0,y:7,s:133},coil:{x:-4,y:0,s:135},militar:{x:-4,y:56,s:168},'side-part':{x:-3,y:24,s:127},chanel:{x:-1,y:60,s:143},bob:{x:0,y:-152,s:62},'straight-long':{x:-1,y:-83,s:77},'curly-long':{x:2,y:-97,s:80},ponytail:{x:19,y:-159,s:73},dreads:{x:-1,y:-133,s:74},blackpower:{x:-4,y:-199,s:67}}
+};
+const LONG_HAIR=new Set(['straight-long','curly-long','ponytail','dreads','blackpower']);
+const HAIR_FILTERS={darkBrown:'sepia(1) saturate(2.1) hue-rotate(338deg) brightness(0.48) contrast(1.16)',brown:'sepia(1) saturate(2.0) hue-rotate(340deg) brightness(0.78) contrast(1.05)',blond:'sepia(1) saturate(1.8) hue-rotate(355deg) brightness(1.35) contrast(0.92)',ruivo:'sepia(1) saturate(3.5) hue-rotate(320deg) brightness(0.9) contrast(1.08)',purple:'sepia(1) saturate(4.0) hue-rotate(245deg) brightness(0.8) contrast(1.08)',white:'grayscale(1) brightness(1.75) contrast(0.65)',green:'sepia(1) saturate(4.0) hue-rotate(65deg) brightness(0.78) contrast(1.08)',pink:'sepia(1) saturate(3.2) hue-rotate(285deg) brightness(1.02) contrast(0.98)'};
+const state={skin:'fair',clothing:'original',eyes:'frown',eyeColor:'brown',mouth:'narrow',mouthColor:'skin',freckles:false,hair:'curly-short',hairColor:'darkBrown'};
+const HAIR_LABELS={moicano:'Moicano','curly-short':'Curly Short',coil:'Coil',militar:'Militar','side-part':'Side Part',chanel:'Chanel',bob:'Bob','straight-long':'Straight Long','curly-long':'Curly Long',ponytail:'Ponytail',dreads:'Dreads',blackpower:'BlackPower / Afro'};
+const els={head:document.getElementById('headLayer'),clothing:document.getElementById('clothingLayer'),eyesLayer:document.getElementById('eyesLayer'),frecklesLayer:document.getElementById('frecklesLayer'),mouthLayer:document.getElementById('mouthLayer'),hairBack:document.getElementById('hairBackLayer'),hairFront:document.getElementById('hairFrontLayer'),skin:document.getElementById('skin'),clothingSelect:document.getElementById('clothing'),eyes:document.getElementById('eyes'),eyeColor:document.getElementById('eyeColor'),mouth:document.getElementById('mouth'),mouthColor:document.getElementById('mouthColor'),frecklesToggle:document.getElementById('frecklesToggle'),hair:document.getElementById('hair'),hairColor:document.getElementById('hairColor'),random:document.getElementById('random'),reset:document.getElementById('reset'),
+  masculineAdjust:document.getElementById('masculineAdjust'),
+  mascX:document.getElementById('mascX'),mascXn:document.getElementById('mascXn'),
+  mascY:document.getElementById('mascY'),mascYn:document.getElementById('mascYn'),
+  mascS:document.getElementById('mascS'),mascSn:document.getElementById('mascSn'),
+  mascCoords:document.getElementById('mascCoords'),
+  masculineMouthAdjust:document.getElementById('masculineMouthAdjust'),
+  mascMouthX:document.getElementById('mascMouthX'),mascMouthXn:document.getElementById('mascMouthXn'),
+  mascMouthY:document.getElementById('mascMouthY'),mascMouthYn:document.getElementById('mascMouthYn'),
+  mascMouthS:document.getElementById('mascMouthS'),mascMouthSn:document.getElementById('mascMouthSn'),
+  mascMouthCoords:document.getElementById('mascMouthCoords'),
+  thinSmileAdjust:document.getElementById('thinSmileAdjust'),
+  thinSmileX:document.getElementById('thinSmileX'),thinSmileXn:document.getElementById('thinSmileXn'),
+  thinSmileY:document.getElementById('thinSmileY'),thinSmileYn:document.getElementById('thinSmileYn'),
+  thinSmileS:document.getElementById('thinSmileS'),thinSmileSn:document.getElementById('thinSmileSn'),
+  thinSmileCoords:document.getElementById('thinSmileCoords')
+};
+for(const key of Object.keys(P.hair)){els.hair.add(new Option(HAIR_LABELS[key],key));}
+function setTransform(el,p){el.style.transform=`translate(${p.x}px, ${p.y}px) scale(${p.s/100})`;}
+function currentMouthSource(){if(state.mouthColor==='red') return P.mouth[state.mouth].red; if(state.mouthColor==='plum') return P.mouth[state.mouth].plum; return P.mouth[state.mouth][state.skin];}
+function render(){
+  const hairSrc=P.hair[state.hair], hairPos=FIXED.hair[state.hair], hairFilter=HAIR_FILTERS[state.hairColor]||'none', isLong=LONG_HAIR.has(state.hair);
+  els.head.src=P.head[state.skin];
+  els.hairBack.src=isLong ? hairSrc : ''; els.hairBack.style.display=isLong?'block':'none';
+  els.eyesLayer.src=P.eyes[state.eyes][state.eyeColor];
+  els.frecklesLayer.src=state.freckles ? P.freckles : ''; els.frecklesLayer.style.display=state.freckles?'block':'none';
+  els.mouthLayer.src=currentMouthSource();
+  els.hairFront.src=isLong ? '' : hairSrc; els.hairFront.style.display=isLong?'none':'block';
+  els.clothing.src=P.clothing[state.clothing];
+  setTransform(els.hairBack,hairPos);
+  setTransform(els.eyesLayer,FIXED.eyes[state.eyes]);
+  setTransform(els.frecklesLayer,FIXED.freckles);
+  setTransform(els.mouthLayer,FIXED.mouth[state.mouth]);
+  setTransform(els.hairFront,hairPos);
+  setTransform(els.clothing,FIXED.clothing);
+  els.hairBack.style.filter=hairFilter; els.hairFront.style.filter=hairFilter;
+  els.skin.value=state.skin; els.clothingSelect.value=state.clothing; els.eyes.value=state.eyes; els.eyeColor.value=state.eyeColor; els.mouth.value=state.mouth; els.mouthColor.value=state.mouthColor; els.frecklesToggle.checked=state.freckles; els.hair.value=state.hair; els.hairColor.value=state.hairColor;
+
+  els.masculineAdjust.style.display = 'none';
+
+  els.masculineMouthAdjust.style.display = 'none';
+  els.thinSmileAdjust.style.display = 'none';
+}
+els.skin.onchange=e=>{state.skin=e.target.value;render();};
+els.clothingSelect.onchange=e=>{state.clothing=e.target.value;render();};
+els.eyes.onchange=e=>{state.eyes=e.target.value;render();};
+els.eyeColor.onchange=e=>{state.eyeColor=e.target.value;render();};
+els.mouth.onchange=e=>{state.mouth=e.target.value;render();};
+els.mouthColor.onchange=e=>{state.mouthColor=e.target.value;render();};
+els.frecklesToggle.onchange=e=>{state.freckles=e.target.checked;render();};
+els.hair.onchange=e=>{state.hair=e.target.value;render();};
+els.hairColor.onchange=e=>{state.hairColor=e.target.value;render();};
+
+function updateMasculine(field,value){
+  FIXED.eyes.frown[field] = Number(value);
+  render();
+}
+for(const [rangeId,numId,field] of [
+  ['mascX','mascXn','x'],
+  ['mascY','mascYn','y'],
+  ['mascS','mascSn','s']
+]){
+  els[rangeId].addEventListener('input',e=>updateMasculine(field,e.target.value));
+  els[numId].addEventListener('input',e=>updateMasculine(field,e.target.value));
+}
+
+function updateMasculineMouth(field,value){
+  FIXED.mouth['narrow'][field] = Number(value);
+  render();
+}
+for(const [rangeId,numId,field] of [
+  ['mascMouthX','mascMouthXn','x'],
+  ['mascMouthY','mascMouthYn','y'],
+  ['mascMouthS','mascMouthSn','s']
+]){
+  els[rangeId].addEventListener('input',e=>updateMasculineMouth(field,e.target.value));
+  els[numId].addEventListener('input',e=>updateMasculineMouth(field,e.target.value));
+}
+
+function updateThinSmile(field,value){
+  FIXED.mouth['thin-smile'][field] = Number(value);
+  render();
+}
+for(const [rangeId,numId,field] of [
+  ['thinSmileX','thinSmileXn','x'],
+  ['thinSmileY','thinSmileYn','y'],
+  ['thinSmileS','thinSmileSn','s']
+]){
+  els[rangeId].addEventListener('input',e=>updateThinSmile(field,e.target.value));
+  els[numId].addEventListener('input',e=>updateThinSmile(field,e.target.value));
+}
+
+const rand=arr=>arr[Math.floor(Math.random()*arr.length)];
+els.random.onclick=()=>{state.skin=rand(Object.keys(P.head));state.clothing=rand(Object.keys(P.clothing));state.eyes=rand(['round','mid','narrow','frown']);state.eyeColor=rand(EYE_COLORS);state.mouth=rand(['thin-smile','thin-straight','thick-smile','thick-straight','narrow']);state.mouthColor=rand(['skin','red','plum']);state.freckles=Math.random()>.5;state.hair=rand(Object.keys(P.hair));state.hairColor=rand(Object.keys(HAIR_FILTERS));render();};
+els.reset.onclick=()=>{state.skin='fair';state.clothing='original';state.eyes='frown';state.eyeColor='brown';state.mouth='narrow';state.mouthColor='skin';state.freckles=false;state.hair='curly-short';state.hairColor='darkBrown';render();};
+render();
+</script>
+</main>
+<script src="game-bridge.js"></script>
+</body>
+</html>

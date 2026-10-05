@@ -102,7 +102,7 @@ During the dash only Water attacks connect. Water deals its normal elemental bon
 
 ## Character creator prototype
 
-Character creation is being developed separately in `character-creator/`. It is not integrated into gameplay yet. The game starts directly with its fixed mage appearance.
+The supplied character generator is integrated through `wizard-creator/`; customize before playing or from the pause menu. The earlier standalone `character-creator/` project is preserved.
 
 Run the gameplay checks with `node --test tests/combat.test.cjs`.
 
@@ -134,3 +134,9 @@ All spawned collectibles (coins, bonus items, energy, health potions, and slot c
 Charged spell visuals use element-specific canvas effects: water crests with curling foam and spray, branching earthquake fissures with airborne stones and dust, and a flame-front fire pulse with hot cores and embers. Visuals use simulation time and freeze on pause; combat timing and damage are unchanged.
 
 The basic water foe is a rounded, wobbling slime. Every 5–8 seconds (first attack after 6s), it vanishes for 0.8s, then falls as rain for 0.5s onto the mage’s position captured at takeoff. Ground ripples mark the landing area without a trajectory line. Impact deals 16 Water damage once within 52px, then the slime reforms with 1s recovery. Move away to dodge; normal attacks and taming cannot hit it while airborne (Ace bypasses this). Tamed slimes use rain on an enemy instead, dealing 36 base Water damage to nearby foes only.
+
+## Playable wizard creator
+
+The approved compact-avatar generator is integrated in `wizard-creator/`. Begin adventure opens it on a fresh browser; choose Use this wizard to save and begin. Customize wizard is also available at startup and in the pause menu. Editing a running adventure pauses it; applying an appearance returns to pause without resetting combat or progress. Cancel discards edits. Appearance and a composed transparent sprite are saved in browser local storage and survive restarts and reloads. If storage is unavailable the appearance works for the current session.
+
+The supplied skin, eyes, mouths, freckles, hair and outfit artwork is composited using its original layer positions, order, and hair filters. All options are available to everyone. The artwork is a front-facing sprite with a subtle walking bob and spell-direction indicator; it does not invent directional frames. The visual size is 54px high while the existing collision body remains 24×28. Original standalone `character-creator/` files remain available.

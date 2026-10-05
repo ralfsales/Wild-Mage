@@ -144,7 +144,15 @@ class Player {
     if (blink) return;
     const x = Math.round(this.x);
     const y = Math.round(this.y);
-    drawMage(x, y, this.facing, this.walkTime || 0, ELEMENT_COLORS[SKILLS[this.selectedSkill].element]);
+    const sprite=window.MageAvatar?.sprite;
+    if(sprite){
+      const h=54,w=h*sprite.naturalWidth/sprite.naturalHeight;
+      const bob=Math.sin(this.walkTime||0)*1.4;
+      ctx.save();ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
+      ctx.fillStyle='#10221c80';ctx.beginPath();ctx.ellipse(x+this.w/2,y+this.h-1,15,5,0,0,Math.PI*2);ctx.fill();
+      ctx.drawImage(sprite,x+this.w/2-w/2,y+this.h-h+bob,w,h);
+      ctx.fillStyle=ELEMENT_COLORS[SKILLS[this.selectedSkill].element];ctx.beginPath();ctx.arc(x+this.w/2+this.facing.x*20,y+12+this.facing.y*15,3,0,Math.PI*2);ctx.fill();ctx.restore();
+    }else drawMage(x, y, this.facing, this.walkTime || 0, ELEMENT_COLORS[SKILLS[this.selectedSkill].element]);
   }
 }
 
@@ -1073,6 +1081,7 @@ function canvasPoint(event) {
 
 window.addEventListener("keydown", (event) => {
 
+  if(window.MageAvatar?.editing)return;
   const key = event.key.toLowerCase();
   if (key === "escape" && !event.repeat) {
     setPaused(game.state === "playing");
@@ -1107,7 +1116,7 @@ canvas.addEventListener("click", (event) => {
   game.cast(point.x, point.y);
 });
 
-startButton.addEventListener("click", () => game.start());
+startButton.addEventListener("click", () => window.beginWithMage ? window.beginWithMage() : game.start());
 restartButton.addEventListener("click", () => game.start());
 muteButton.addEventListener("click", () => {
   soundMuted = !soundMuted;

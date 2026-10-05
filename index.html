@@ -18,6 +18,7 @@
         <button id="muteButton" type="button" aria-pressed="true" aria-label="Sound muted. Enable sound">Sound off</button>
       </div>
     </header>
+    <p id="wizardNotice" class="start-tip" role="status"></p>
     <div class="world-heading"><div><p class="eyebrow">CHAPTER I · THE WILDWOOD</p><h1>A little magic. A wild adventure.</h1></div><span class="world-tag"><i></i> Enchanted clearing</span></div>
     <section class="canvas-frame" aria-label="Wild Mage game">
       <canvas id="gameCanvas" width="960" height="640" tabindex="0" aria-label="Game field. Move with arrow keys. F fire, D water, S grass, A tame. Escape pauses.">Your browser needs Canvas support to play Wild Mage.</canvas>
@@ -28,11 +29,12 @@
           <p>A gentle first lesson: survive 60 seconds<br>and tame one foe of each element.</p>
           <button id="startButton" class="primary-button" type="button">Begin adventure <span aria-hidden="true">→</span></button>
 
+          <button id="customizeStart" type="button">Customize wizard</button>
           <p class="start-tip">Arrow keys to explore · Tap F / D / S / A to cast · Hold for a charged move</p>
         </div>
       </div>
       <div id="pauseScreen" class="overlay hidden">
-        <div class="panel"><div class="sigil" aria-hidden="true">☾</div><p class="eyebrow">TAKE A BREATHER</p><h2>Forest at rest.</h2><p>Your adventure will be here when you return.</p><button id="resumeButton" class="primary-button" type="button">Resume adventure →</button><p class="start-tip">Or press Escape to continue</p></div>
+        <div class="panel"><div class="sigil" aria-hidden="true">☾</div><p class="eyebrow">TAKE A BREATHER</p><h2>Forest at rest.</h2><p>Your adventure will be here when you return.</p><button id="resumeButton" class="primary-button" type="button">Resume adventure →</button><button id="customizePaused" type="button">Customize wizard</button><p class="start-tip">Or press Escape to continue</p></div>
       </div>
       <div id="levelCompleteScreen" class="overlay hidden"><div class="panel"><p class="eyebrow">CLEARING COMPLETE</p><h2>Three elements.<br>One team.</h2><p>You survived a minute and befriended fire, water, and grass. Your health is restored when you enter the next area.</p><button id="nextLevelButton" class="primary-button" type="button">Enter level two →</button></div></div>
       <div id="gameOverScreen" class="overlay hidden">
@@ -65,7 +67,9 @@
     <footer class="hint-bar"><span><b>FIELD NOTES</b> Hold F/D/S for charged pulses; hold A for ally specials. Collect violet energy: 3 orbs = 1 charge, max 3.</span><span>Move <kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd> · Pause <kbd>Esc</kbd></span></footer>
   </main>
 
+  <dialog id="wizardDialog" aria-label="Customize your wizard"><button id="closeWizard" type="button" aria-label="Close character creator">Close ×</button><iframe id="wizardFrame" title="Wizard character generator"></iframe></dialog>
   <script src="game.js"></script>
+  <script src="wizard-player.js"></script>
 
 </body>
 </html>
